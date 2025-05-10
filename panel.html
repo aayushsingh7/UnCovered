@@ -1,12 +1,88 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <script src="./panel.js"></script>
-</body>
+<html>
+  <head>
+    <title>FactSnap</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="content-box">
+      <div id="content-type">
+        <span id="action-tag" class="action-tag">Fact Check</span>
+      </div>
+
+      <p class="custom-prompt">Check the sorces from goverment websites only, and trusted news websites</p>
+
+      <div id="content-container">
+        <div id="selected-text"></div>
+        <div id="selected-image-container">
+          <img id="selected-image" src="" alt="Selected image" />
+        </div>
+        <div id="no-content" class="no-selection">
+          No content selected. Please select text or an image on a webpage,
+          right-click, and choose a FactSnap option.
+        </div>
+      </div>
+
+      <!-- <div class="buttons">
+      <button class="action-btn" id="analyze-btn">Analyze Content</button>
+      <button class="action-btn secondary" id="copy-btn">Add Custom Prompt</button>
+    </div> -->
+
+      <div id="results-container">
+        <div class="result-tabs">
+          <span class="active">Answer</span>
+          <span>Images</span>
+          <span>Sources</span>
+          <span>Tasks</span>
+        </div>
+        <!-- <div id="results-title">Results:</div> -->
+        <div id="results-content">
+          Image Context Menu:
+
+A new context menu item appears when you right-click on any image: "FactSnap: Analyze image"
+When clicked, it captures the image URL and displays it in the side panel
+
+
+Unified Content Handling:
+
+The extension now handles both text and images with a single content system
+It keeps track of the content type (text or image) to display the appropriate UI
+        </div>
+      </div>
+    </div>
+
+    <div class="search-box">
+      <!-- <div class="content-box">
+        <div id="content-type">
+          <span id="content-label">Selected Content:</span>
+          <span id="action-tag" class="action-tag">Fact Check</span>
+        </div>
+
+        <div id="content-container">
+          <div id="selected-text"></div>
+          <div id="selected-image-container">
+            <img id="selected-image" src="" alt="Selected image" />
+          </div>
+          <div id="no-content" class="no-selection">
+            No content selected. Please select text or an image on a webpage,
+            right-click, and choose a FactSnap option.
+          </div>
+        </div>
+
+  
+        <div id="results-container">
+          <div id="results-title">Results:</div>
+          <div id="results-content"></div>
+        </div>
+      </div> -->
+
+      <input
+        type="text"
+        id="search-input"
+        placeholder="Anything Specific You Want To Know?"
+      />
+      <!-- <button id="search-btn">Search</button> -->
+    </div>
+    <script src="panel.js"></script>
+  </body>
 </html>
