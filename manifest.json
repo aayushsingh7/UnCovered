@@ -1,0 +1,22 @@
+{
+  "name": "FactSnap - One-Click AI fact-checking",
+  "version": "1.0",
+  "manifest_version": 3,
+  "permissions": ["contextMenus", "sidePanel", "storage", "activeTab"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_title": "FactSnap",
+    "default_icon": "./assets/icon.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "panel.html"
+  },
+  "icons": {
+    "16": "./assets/icon.png",
+    "48": "./assets/icon.png",
+    "128": "./assets/icon.png"
+  }
+}
