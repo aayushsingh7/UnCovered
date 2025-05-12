@@ -1,4 +1,19 @@
 import { marked } from "./libs/marked.esm.js";
+import {
+  createContentBox,
+  createSourceBox,
+  fetchSourceDetails,
+  formatAiResponse,
+  generateRandomId,
+  getReadableDomain,
+} from "./utils/helpers.js";
+import {
+  fetchAIResponse,
+  fetchAllChats,
+  fetchChat,
+  searchChat,
+} from "./utils/api.js";
+
 const output =
   "<think>\n" +
   "Okay, let's tackle this query about the current and latest status of the India-Pakistan war-like situations. The user wants an up-to-date summary, so I need to focus on the most recent developments from the provided search results.\n" +
@@ -55,7 +70,7 @@ const output =
   "    ]\n" +
   "  }\n" +
   "]";
-console.log({ marked, hljs });
+
 marked.setOptions({
   highlight: function (code, lang) {
     return hljs.highlightAuto(code).value;
@@ -63,449 +78,280 @@ marked.setOptions({
   langPrefix: "hljs language-",
 });
 // Function to fetch and display the selected content
-function updateContent() {
-  const textElement = document.getElementById("selected-text");
-  const imageContainer = document.getElementById("selected-image-container");
-  const imageElement = document.getElementById("selected-image");
-  const noContentElement = document.getElementById("no-content");
-  const actionTagElement = document.getElementById("action-tag");
-  const messagesContainer = document.getElementById("messages-container");
-  const searchInput = document.getElementById("search-input");
-  const contentBox = document.getElementById("content-box");
 
-  let newMessageDetails = {
-    selectedText: "",
-    actionType: "",
-  };
+// Declare variables outside the function
+let textElement;
+let imageContainer;
+let imageElement;
+let noContentElement;
+let actionTagElement;
+let messagesContainer;
+let contentBox;
+let sideNavbar;
+let menuBar;
+let closeMenuBar;
+let searchBox;
+let searchInput;
 
-  // let currentSourcesTab, currentTasksTab, currentAnswerTab;
-  let resultContainer = {
-    tab1: null,
-    tab2: null,
-    tab3: null,
-    panel1: null,
-    panel2: null,
-    panel3: null,
-  };
+// Refresh DOM references
+function refreshElements() {
+  textElement = document.getElementById("selected-text");
+  imageContainer = document.getElementById("selected-image-container");
+  imageElement = document.getElementById("selected-image");
+  noContentElement = document.getElementById("no-content");
+  actionTagElement = document.getElementById("action-tag");
+  messagesContainer = document.getElementById("messages-container");
+  contentBox = document.getElementById("content-box");
+  sideNavbar = document.getElementById("sidenav");
+  menuBar = document.getElementById("menu");
+  closeMenuBar = document.getElementById("close-btn");
+  searchBox = document.getElementById("search-box");
+  searchInput = document.getElementById("search-input") || null;
 
-  searchInput.addEventListener("keydown", (e) => {
-    if (e.key == "Enter") {
-      addNewMessage(e.target.value);
-    }
-  });
+  if (userDetails.email) {
+    actionTagElement.addEventListener("click", () => {
+      let key = actionTagElement.innerText.split(" ").join("").toLowerCase();
+      actionTagElement.classList.add("animate-change-tag");
 
-  document.addEventListener("click", function (event) {
-    // Check if the clicked element is a tab
-    if (event.target.classList.contains("tab")) {
-      const clickedTab = event.target;
-      const tabName = clickedTab.dataset.tab;
-
-      // Find the parent content box of this tab
-      const contentBox = clickedTab.closest(".content-box");
-
-      if (contentBox) {
-        // Get all tabs and panels within THIS content box only
-        const allTabs = contentBox.querySelectorAll(".tab");
-        const allPanels = contentBox.querySelectorAll(".tab-panel");
-
-        // Remove active class from all tabs in this content box
-        allTabs.forEach((tab) => {
-          tab.classList.remove("active");
-        });
-
-        // Add active class to clicked tab
-        clickedTab.classList.add("active");
-
-        // Hide all panels in this content box
-        allPanels.forEach((panel) => {
-          panel.style.display = "none";
-        });
-
-        // Show the panel that corresponds to the clicked tab
-        const activePanel = contentBox.querySelector(
-          `.tab-panel[data-tab="${tabName}"]`
-        );
-        if (activePanel) {
-          activePanel.style.display = "block";
-        }
-      }
-    }
-  });
-
-  async function addNewMessage(customPrompt) {
-    const messageBoxes =
-      messagesContainer.getElementsByClassName("new-message");
-    if (messageBoxes.length > 0) {
-      console.log(
-        "inside the messageBoxes.length > 0",
-        messageBoxes[messageBoxes.length - 1]
-      );
-      messageBoxes[messageBoxes.length - 1].classList.remove("new-message");
-    }
-
-    try {
-      let newMessage = createContentBox(customPrompt);
-      messagesContainer.appendChild(newMessage);
-
-      searchInput.value = "";
-      contentBox.classList.remove("show-content-box");
-      requestAnimationFrame(() => {
-        messagesContainer.scrollTop = newMessage.offsetTop;
-      });
-
-      const { followUps, markdown, sources, tasks, thinking } =
-        await formatAiResponse(output);
-      // console.log(resultContainer);
       setTimeout(() => {
-        // Try multiple approaches to hide
-        resultContainer.tab2.style.display = "block";
-        resultContainer.tab3.style.display = "block";
-
-        sources.forEach((source) => {
-          const sourceBox = createSourceBox(source);
-          resultContainer.panel2.appendChild(sourceBox);
-        });
-
-        // resultContainer.panel1.innerText =
-        //   "This is an example response of the perplexity API and this is in very details output.";
-        //  console.log(marked)
-        const htmlContent = marked(markdown);
-        resultContainer.panel1.innerHTML = htmlContent;
-
-        newMessageDetails = {
-          selectedText: "",
-          actionType: "",
-        };
-
-        resultContainer = {
-          tab1: null,
-          tab2: null,
-          tab3: null,
-          panel1: null,
-          panel2: null,
-          panel3: null,
-        };
-      }, 3000);
-    } catch (err) {
-      console.log(err);
-      alert("Oops! something went wrong");
-    }
-  }
-
-  function createSourceBox(fetchLinkDetails) {
-    const sourceBox = document.createElement("div");
-    sourceBox.className = "source-box";
-
-    const sourceHeader = document.createElement("div");
-    sourceHeader.className = "source-header";
-
-    const img = document.createElement("img");
-    img.src = fetchLinkDetails.fevicon;
-    img.alt = "";
-
-    const sourceTitle = document.createElement("div");
-    sourceTitle.className = "source-title";
-
-    const titleSpan = document.createElement("span");
-    titleSpan.className = "title";
-    titleSpan.textContent = fetchLinkDetails.publisher;
-
-    const sourceLink = document.createElement("a");
-    sourceLink.href = fetchLinkDetails.url;
-    sourceLink.className = "source-link";
-    sourceLink.textContent = fetchLinkDetails.url;
-
-    sourceTitle.appendChild(titleSpan);
-    sourceTitle.appendChild(sourceLink);
-
-    sourceHeader.appendChild(img);
-    sourceHeader.appendChild(sourceTitle);
-
-    const sourceInfo = document.createElement("div");
-    sourceInfo.className = "source-info";
-
-    const headline = document.createElement("a");
-    headline.textContent = fetchLinkDetails.title;
-
-    const description = document.createElement("p");
-    description.textContent = fetchLinkDetails.description;
-
-    sourceInfo.appendChild(headline);
-    sourceInfo.appendChild(description);
-
-    sourceBox.appendChild(sourceHeader);
-    sourceBox.appendChild(sourceInfo);
-
-    return sourceBox;
-  }
-
-  function fetchAIResponse(actionType) {
-    try {
-    } catch (err) {
-      console.log(err);
-    }
-  }
-
-  async function formatAiResponse(response) {
-    const thinking = output
-      .slice(output.indexOf("<think>") + 7, output.lastIndexOf("</think>"))
-      .trim()
-      .split("\n")
-      .filter((pera) => pera != "")
-      .map((pera) => "> " + pera)
-      .join("\n\n");
-    let mainBody = JSON.parse(output.slice(output.indexOf("</think>") + 9));
-    const sources = mainBody[1].sources;
-    const tasks = mainBody[2].tasks;
-    const followUps = mainBody[3].followUp;
-
-    const formatted = mainBody[0].replace(/\[(\d+)\]/g, (match, num) => {
-      const index = parseInt(num, 10);
-      const source = sources[index - 1];
-      if (source && source.url) {
-        return `[${match}](${source.url})`;
-      } else {
-        return match;
-      }
+        if (key == "deepresearch") {
+          actionTagElement.innerText = "Fact Check";
+          newMessageDetails.actionType = "Fact Check";
+        } else if (key == "quicksearch") {
+          actionTagElement.innerText = "Deep Research";
+          newMessageDetails.actionType = "Deep Research";
+        } else {
+          actionTagElement.innerText = "Quick Search";
+          newMessageDetails.actionType = "Quick Search";
+        }
+        actionTagElement.classList.remove("animate-change-tag");
+      }, 200);
     });
 
-    let detailedSources = [];
-    for (let i = 0; i < sources.length; i++) {
-      let fetchLinkDetails;
-      try {
-        fetchLinkDetails = await fetchSourceDetails(sources[i].url);
-      } catch (err) {
-        fetchLinkDetails = {
-          title: "",
-          image:
-            "https://static.vecteezy.com/system/resources/thumbnails/004/141/669/small/no-photo-or-blank-image-icon-loading-images-or-missing-image-mark-image-not-available-or-image-coming-soon-sign-simple-nature-silhouette-in-frame-isolated-illustration-vector.jpg",
-          description: "",
-          url: fetchLinkDetails.url,
-          date: fetchLinkDetails.date,
-          fevicon:
-            "https://static.vecteezy.com/system/resources/thumbnails/004/141/669/small/no-photo-or-blank-image-icon-loading-images-or-missing-image-mark-image-not-available-or-image-coming-soon-sign-simple-nature-silhouette-in-frame-isolated-illustration-vector.jpg",
-          publisher: getReadableDomain(sources[i].url),
-        };
+    // document.getElementById("login").addEventListener("click", () => {
+    //   chrome.identity.getAuthToken({ interactive: true }, (token) => {
+    //     if (chrome.runtime.lastError) {
+    //       console.error("Auth Error:", chrome.runtime.lastError);
+    //       return;
+    //     }
+
+    //     console.log("Got token:", token);
+
+    //     // Now fetch user profile info
+    //     fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+    //       headers: {
+    //         Authorization: "Bearer " + token,
+    //       },
+    //     })
+    //       .then((response) => response.json())
+    //       .then((userInfo) => {
+    //         console.log("User info:", userInfo);
+    //         // Example: userInfo.name, userInfo.email, userInfo.picture
+    //       })
+    //       .catch((err) => console.error("Fetch error:", err));
+    //   });
+    // });
+
+    menuBar.addEventListener("click", () => {
+      sideNavbar.classList.add("show-sidenav");
+    });
+
+    closeMenuBar.addEventListener("click", () => {
+      sideNavbar.classList.remove("show-sidenav");
+    });
+
+    searchInput.addEventListener("keydown", (e) => {
+      // if (!newMessageDetails.actionType) {
+      //   if (e.target.value == "") {
+      //     setTimeout(() => {
+      //       contentBox.style.display = "none";
+      //       contentBox.classList.remove("show-content-box");
+      //     }, 400);
+      //   } else {
+      //     contentBox.style.display = "flex";
+      //     contentBox.classList.add("show-content-box");
+      //   }
+      // }
+      if (e.key == "Enter" && !loadingAiResponse) {
+        // console.log("searchInput.addEventListener")
+        addNewMessage(e.target.value);
+      }
+    });
+  }
+}
+
+let userDetails = {};
+
+let loadingAiResponse = false;
+
+let newMessageDetails = {
+  selectedText: "",
+  actionType: "",
+};
+
+let resultsContainerObj = {
+  tab1: null,
+  tab2: null,
+  tab3: null,
+  panel1: null,
+  panel2: null,
+  panel3: null,
+};
+
+document.addEventListener("click", function (event) {
+  // Check if the clicked element is a tab
+  if (event.target.classList.contains("tab")) {
+    const clickedTab = event.target;
+    const tabName = clickedTab.dataset.tab;
+
+    // Find the parent content box of this tab
+    const contentBox = clickedTab.closest(".content-box");
+
+    if (contentBox) {
+      // Get all tabs and panels within THIS content box only
+      const allTabs = contentBox.querySelectorAll(".tab");
+      const allPanels = contentBox.querySelectorAll(".tab-panel");
+
+      // Remove active class from all tabs in this content box
+      allTabs.forEach((tab) => {
+        tab.classList.remove("active");
+      });
+
+      // Add active class to clicked tab
+      clickedTab.classList.add("active");
+
+      // Hide all panels in this content box
+      allPanels.forEach((panel) => {
+        panel.style.display = "none";
+      });
+
+      // Show the panel that corresponds to the clicked tab
+      const activePanel = contentBox.querySelector(
+        `.tab-panel[data-tab="${tabName}"]`
+      );
+      if (activePanel) {
+        activePanel.style.display = "block";
+      }
+    }
+  }
+});
+
+async function addNewMessage(customPrompt) {
+  const introTemplate = document.getElementById("intro");
+  if (window.getComputedStyle(introTemplate).display == "flex")
+    introTemplate.style.display = "none";
+  if (!newMessageDetails.actionType) {
+    console.log("Invalid Message");
+    return;
+  }
+  console.log("inside addNewMessage", newMessageDetails);
+  loadingAiResponse = true;
+
+  const messageBoxes = messagesContainer.getElementsByClassName("new-message");
+  if (messageBoxes.length > 0) {
+    messageBoxes[messageBoxes.length - 1].classList.remove("new-message");
+  }
+
+  try {
+    let { contentType, mainBox: newMessage } = createContentBox(
+      customPrompt,
+      newMessageDetails,
+      resultsContainerObj
+    );
+    messagesContainer.appendChild(newMessage);
+
+    searchInput.value = "";
+    contentBox.classList.remove("show-content-box");
+   contentBox.style.display = "none";
+    // requestAnimationFrame(() => {
+    //   messagesContainer.scrollTop = newMessage.offsetTop - 60;
+    // });
+    messagesContainer.scrollTo({
+  top: newMessage.offsetTop - 60,
+  behavior: 'smooth'
+});
+
+    const { followUps, markdown, sources, tasks, thinking, images } =
+      await formatAiResponse(output);
+    setTimeout(() => {
+      // Try multiple approaches to hide
+      resultsContainerObj.tab2.style.display = "block";
+      resultsContainerObj.tab3.style.display = "block";
+
+      sources.forEach((source) => {
+        const sourceBox = createSourceBox(source);
+        resultsContainerObj.panel2.appendChild(sourceBox);
+      });
+
+      resultsContainerObj.panel3.innerHTML = tasks
+        .map((task, index) => {
+          return `
+          <div class="task ${index == tasks.length - 1 ? "last-task" : ""}">
+          <span class="task-num">${index + 1}</span>
+          <div class="details">
+            <p>${task.task}</p>
+            <span>Time Taken: ${task.timeTaken}s</span>
+          </div>
+        </div>
+        `;
+        })
+        .join("");
+
+      // resultsContainerObj.panel1.innerText =
+      //   "This is an example response of the perplexity API and this is in very details output.";
+      //  console.log(marked)
+      const htmlContent = marked(markdown);
+      resultsContainerObj.panel1.innerHTML = htmlContent;
+
+      if (newMessageDetails.actionType.startsWith("Fact")) {
+        contentType.innerHTML +=
+          "<div class='final-fact-verdict true'>Fact is true</div>";
       }
 
-      detailedSources.push({
-        title: fetchLinkDetails.title,
-        image: fetchLinkDetails.image.url,
-        description: fetchLinkDetails.description,
-        url: fetchLinkDetails.url,
-        date: fetchLinkDetails.date,
-        fevicon: fetchLinkDetails.logo.url,
-        publisher: fetchLinkDetails.publisher,
+      newMessageDetails = {
+        selectedText: "",
+        actionType: "",
+      };
+
+      resultsContainerObj = {
+        tab1: null,
+        tab2: null,
+        tab3: null,
+        panel1: null,
+        panel2: null,
+        panel3: null,
+      };
+
+      requestAnimationFrame(() => {
+        messagesContainer.scrollTop = newMessage.offsetTop - 60;
       });
-    }
 
-    return {
-      thinking,
-      markdown: formatted,
-      tasks,
-      sources: detailedSources,
-      followUps,
-    };
+      loadingAiResponse = false;
+    }, 3000);
+  } catch (err) {
+    console.log(err);
+    alert("Oops! something went wrong");
   }
+}
 
-  function getReadableDomain(url) {
-    try {
-      const { hostname } = new URL(url);
-      const filteredHost = hostname
-        .replace(/^www\d*\./, "") // remove www, www1, etc.
-        .replace(/^m\./, "") // remove m. for mobile
-        .replace(/^en\./, ""); // optionally remove language subdomains
-
-      // Split by . and - to separate words
-      const words = filteredHost
-        .split(/[.\-]/) // split by dot or dash
-        .filter(Boolean); // remove empty strings
-
-      // Capitalize each word
-      const readableName = words
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ");
-
-      return readableName;
-    } catch (e) {
-      return "Unknown Source";
-    }
-  }
-
-  async function fetchSourceDetails(url) {
-    const res = await fetch(
-      `https://api.microlink.io/?url=${encodeURIComponent(url)}`
-    );
-    const data = await res.json();
-    console.log(data);
-    return data.data;
-  }
-
-  function generateRandomId() {
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let id = "";
-    for (let i = 0; i < 16; i++) {
-      id += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return id;
-  }
-
-  function createContentBox(customPrompt) {
-    const randomId = generateRandomId();
-    const mainBox = document.createElement("div");
-    mainBox.className = "new-message";
-
-    const contentBox = document.createElement("div");
-    contentBox.id = `${randomId}`;
-    contentBox.className = "content-box";
-    contentBox.classList.add("message-box");
-
-    // Content type section
-    const contentType = document.createElement("div");
-    contentType.className = "content-type";
-
-    const actionTag = document.createElement("span");
-    actionTag.className =
-      newMessageDetails.actionType == "Fact Check"
-        ? "action-tag"
-        : "action-tag research";
-    actionTag.innerText = newMessageDetails.actionType;
-    console.log(newMessageDetails);
-
-    contentType.appendChild(actionTag);
-    contentBox.appendChild(contentType);
-
-    // Custom prompt paragraph
-    const prompt = document.createElement("p");
-    prompt.className = "custom-prompt";
-    prompt.textContent = customPrompt;
-    contentBox.appendChild(prompt);
-
-    // Content container
-    const contentContainer = document.createElement("div");
-    contentContainer.className = "content-container";
-
-    if (newMessageDetails.actionType.startsWith("Image")) {
-      const selectedImageContainer = document.createElement("div");
-      selectedImageContainer.className = "selected-image-container";
-
-      const selectedImage = document.createElement("img");
-      selectedImage.className = "selected-image";
-      selectedImage.src = "";
-      selectedImage.alt = "Selected image";
-
-      selectedImageContainer.appendChild(selectedImage);
-      contentContainer.appendChild(selectedImageContainer);
-    } else if (
-      newMessageDetails.actionType.startsWith("Fact") ||
-      newMessageDetails.actionType.startsWith("Deep")
-    ) {
-      const selectedText = document.createElement("div");
-      console.log(
-        "Selected Text is not woking ------------- ",
-        newMessageDetails.selectedText,
-        selectedText
-      );
-      selectedText.className = "selected-text";
-      selectedText.innerText = newMessageDetails.selectedText;
-      contentContainer.appendChild(selectedText);
-    } else {
-      const noContent = document.createElement("div");
-      noContent.className = "no-selection";
-      noContent.textContent =
-        "No content selected. Please select text or an image on a webpage, right-click, and choose a FactSnap option.";
-      contentContainer.appendChild(noContent);
-    }
-
-    contentBox.appendChild(contentContainer);
-
-    // Results container
-    const resultsContainer = document.createElement("div");
-    resultsContainer.className = "results-container markdown-body";
-
-    // Tabs
-    const resultTabs = document.createElement("div");
-    resultTabs.className = "result-tabs";
-
-    const tab1 = document.createElement("span");
-    tab1.className = "tab active";
-    tab1.textContent = "Answer";
-    tab1.dataset.tab = "answer";
-
-    const tab2 = document.createElement("span");
-    tab2.className = "tab";
-    tab2.textContent = "Sources";
-    tab2.dataset.tab = "sources";
-    tab2.style.display = "none";
-
-    const tab3 = document.createElement("span");
-    tab3.className = "tab";
-    tab3.textContent = "Tasks";
-    tab3.dataset.tab = "tasks";
-    tab3.style.display = "none";
-
-    resultTabs.appendChild(tab1);
-    resultTabs.appendChild(tab2);
-    resultTabs.appendChild(tab3);
-
-    // Content panels
-    const resultsContent = document.createElement("div");
-    resultsContent.className = "results-content";
-
-    const panel1 = document.createElement("div");
-    panel1.className = "tab-panel";
-    panel1.dataset.tab = "answer";
-    panel1.textContent = "Generating response..."; // default content
-    panel1.style.display = "block"; // only this is visible initially
-
-    const panel2 = document.createElement("div");
-    panel2.className = "tab-panel";
-    panel2.dataset.tab = "sources";
-    panel2.style.display = "none";
-
-    const panel3 = document.createElement("div");
-    panel3.className = "tab-panel";
-    panel3.dataset.tab = "tasks";
-    panel3.style.display = "none";
-    panel3.textContent = "Tasks will be listed here.";
-
-    resultsContent.appendChild(panel1);
-    resultsContent.appendChild(panel2);
-    resultsContent.appendChild(panel3);
-
-    // Combine everything
-    resultsContainer.appendChild(resultTabs);
-    resultsContainer.appendChild(resultsContent);
-    contentBox.appendChild(resultsContainer);
-    mainBox.appendChild(contentBox);
-
-    resultContainer.tab1 = tab1;
-    resultContainer.tab2 = tab2;
-    resultContainer.tab3 = tab3;
-    resultContainer.panel1 = panel1;
-    resultContainer.panel2 = panel2;
-    resultContainer.panel3 = panel3;
-
-    return mainBox;
-  }
-
-  // Hide all content elements initially
+function updateContent() {
+  if (!userDetails.email) return;
   textElement.style.display = "none";
   imageContainer.style.display = "none";
   noContentElement.style.display = "none";
-  // resultsContainer.style.display = 'none';
-
-  // Request the content from the background script
   chrome.runtime.sendMessage({ action: "getContent" }, (response) => {
+    console.log("------------------ IMPORTANT ------------------", response);
     if (chrome.runtime.lastError) {
       noContentElement.style.display = "block";
       noContentElement.textContent = "Error retrieving content.";
       return;
     }
 
+    if (!response.contentType) return;
+
     // Update UI based on content type and action type
     if (response.contentType === "text" && response.text) {
+      contentBox.style.display = "block";
       contentBox.classList.add("show-content-box");
       // Display text content
       // contentLabelElement.textContent = "Selected Content:";
@@ -513,23 +359,25 @@ function updateContent() {
       newMessageDetails.selectedText = response.text;
       textElement.textContent = response.text;
 
-      console.log(response.actionType);
       // Set the action tag and button text based on action type
       if (response.actionType === "deepResearch") {
         actionTagElement.textContent = "Deep Research";
         actionTagElement.className = "action-tag research";
         // analyzeButton.textContent = "Research Deeply";
         newMessageDetails.actionType = "Deep Research";
-        console.log(newMessageDetails, "actionType is setting here");
-        // resultsTitle.textContent = "Research Results:";
+        console.log("inside deepResearch", newMessageDetails, response);
       } else {
+        console.log("Change is required");
         actionTagElement.textContent = "Fact Check";
         actionTagElement.className = "action-tag";
         // analyzeButton.textContent = "Check Facts";
         newMessageDetails.actionType = "Fact Check";
+        console.log("inslide fact check", newMessageDetails, response);
+        console.log("-------------------------------------------------------");
         // resultsTitle.textContent = "Fact Check Results:";
       }
     } else if (response.contentType === "image" && response.imageUrl) {
+      contentBox.style.display = "flex";
       contentBox.classList.add("show-content-box");
       // Display image content
       // contentLabelElement.textContent = "Selected Image:";
@@ -556,54 +404,144 @@ function updateContent() {
   });
 }
 
-// Function to simulate processing (in a real app, this would call your API)
-function processContent(contentType, actionType, content) {
-  return new Promise((resolve) => {
-    // This is a placeholder for your actual processing logic
-    setTimeout(() => {
-      if (contentType === "text") {
-        if (actionType === "deepResearch") {
-          resolve(
-            `Deep research results for: "${content.substring(0, 50)}${
-              content.length > 50 ? "..." : ""
-            }"\n\n` +
-              `This is a simulated in-depth analysis that would normally include:\n` +
-              `• Comprehensive background information\n` +
-              `• Multiple credible sources analysis\n` +
-              `• Historical context and developments\n` +
-              `• Expert opinions and relevant citations\n` +
-              `• Related perspectives and implications`
-          );
-        } else {
-          resolve(
-            `Fact check results for: "${content.substring(0, 50)}${
-              content.length > 50 ? "..." : ""
-            }"\n\n` +
-              `This is a simulated fact check that would normally include:\n` +
-              `• Verification status: Mostly accurate\n` +
-              `• Source verification: 3 reliable sources\n` +
-              `• Notable discrepancies: Minor date inconsistency\n` +
-              `• Context analysis: Complete`
-          );
-        }
-      } else if (contentType === "image") {
-        resolve(
-          `Image analysis results:\n\n` +
-            `This is a simulated image analysis that would normally include:\n` +
-            `• Content description\n` +
-            `• Detected objects and entities\n` +
-            `• Authenticity verification\n` +
-            `• Related image search results\n` +
-            `• Metadata analysis`
-        );
+async function fetchUserInfo(token) {
+  try {
+    const response = await fetch(
+      "https://www.googleapis.com/oauth2/v3/userinfo",
+      {
+        headers: {
+          Authorization: "Bearer " + token,
+        },
       }
-    }, 1000); // Simulate 1 second processing time
-  });
+    );
+
+    const userInfo = await response.json();
+    await chrome.storage.local.set({ userInfo });
+    document.body.innerHTML = `
+    <header class="header">
+      <nav>
+        <img src="./assets/menu.svg" alt="" id="menu" />
+        <h3>New Chat</h3>
+      </nav>
+    </header>
+
+    <div class="sidenav" id="sidenav">
+      <div class="header">
+        <input type="text" placeholder="Search Any Chat" />
+        <img src="./assets/close.svg" alt="" id="close-btn" />
+      </div>
+
+      <div class="chats">
+        <div class="chat">
+          <h4>Somethings wrong when the guy has blood all over his hand</h4>
+          <button>Delete</button>
+        </div>
+        <div class="chat">
+          <h4>Somethings wrong when the guy has blood all over his hand</h4>
+          <button>Delete</button>
+        </div>
+        <div class="chat">
+          <h4>Somethings wrong when the guy has blood all over his hand</h4>
+          <button>Delete</button>
+        </div>
+        <div class="chat">
+          <h4>Somethings wrong when the guy has blood all over his hand</h4>
+          <button>Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="messages" id="messages-container">
+      <div class="intro" id="intro">
+  <h3>Hey there, ${userInfo?.name?.split(" ")[0]}! 👋</h3>
+  <p>It's so lovely to see you here. 💫 How can I make your day better today? 😊</p>
+</div>
+
+    </div>
+
+    <div class="search-box" id="search-box">
+      <div class="content-box" id="content-box">
+        <div id="content-type" class="content-type">
+          <span id="content-label" class="content-label"
+            >Selected Content:</span
+          >
+          <span id="action-tag" class="action-tag">Fact Check</span>
+        </div>
+
+        <div id="content-container" class="content-container">
+          <div id="selected-text" class="selected-text"></div>
+          <div id="selected-image-container" class="selected-image-container">
+            <img
+              id="selected-image"
+              src=""
+              alt="Selected image"
+              class="selected-image"
+            />
+          </div>
+          <div id="no-content" class="no-selection">
+            No content selected. Please select text or an image on a webpage,
+            right-click, and choose a FactSnap option.
+          </div>
+        </div>
+      </div>
+
+      <input
+        type="text"
+        id="search-input"
+        placeholder="Anything Specific You Want To Know?"
+      />
+    </div>
+    `;
+
+    return userInfo;
+  } catch (err) {
+    console.error("Failed to fetch user info:", err);
+    return null;
+  }
 }
 
-// When the panel is loaded, request the selected content from the background script
-document.addEventListener("DOMContentLoaded", () => {
-  // Initial content fetch
+async function getUserInfo() {
+  try {
+    // Try silent login
+    let token = await new Promise((resolve, reject) => {
+      chrome.identity.getAuthToken({ interactive: false }, (token) => {
+        if (chrome.runtime.lastError || !token)
+          return reject(chrome.runtime.lastError);
+        resolve(token);
+      });
+    });
+
+    return await fetchUserInfo(token);
+  } catch (silentError) {
+    console.warn("Silent login failed:", silentError);
+
+    // Try interactive login
+    try {
+      document.body.innerHTML = `<div class="login">
+      <h2>FactSnap Authentication</h2>
+      <p>Please Wait, while we verify you...</p>
+    </div>`;
+      let token = await new Promise((resolve, reject) => {
+        chrome.identity.getAuthToken({ interactive: true }, (token) => {
+          if (chrome.runtime.lastError || !token)
+            return reject(chrome.runtime.lastError);
+          resolve(token);
+        });
+      });
+
+      return await fetchUserInfo(token);
+    } catch (interactiveError) {
+      console.error("Interactive login failed:", interactiveError);
+      return null;
+    }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  const user = await getUserInfo();
+  userDetails = user;
+
+  refreshElements();
   updateContent();
 
   // Listen for content updates from the background script
@@ -612,98 +550,8 @@ document.addEventListener("DOMContentLoaded", () => {
       message.action === "contentUpdated" ||
       message.action === "textUpdated"
     ) {
+      searchInput.value = "";
       updateContent();
-
-      // Hide the results container when new content is loaded
-      // document.getElementById('results-container').style.display = 'none';
     }
   });
-
-  // Add event listener for the analyze button
-  // document.getElementById("analyze-btn").addEventListener("click", () => {
-  //   // const resultsContainer = document.getElementById('results-container');
-  //   // const resultsContent = document.getElementById('results-content');
-  //   // const analyzeButton = document.getElementById('analyze-btn');
-
-  //   // Show loading state
-  //   // analyzeButton.disabled = true;
-  //   // analyzeButton.textContent = "Processing...";
-  //   // resultsContainer.style.display = 'block';
-  //   // resultsContent.textContent = "Analyzing content...";
-
-  //   chrome.runtime.sendMessage({ action: "getContent" }, async (response) => {
-  //     if (response.contentType === "text" && response.text) {
-  //       // Process text based on action type
-  //       try {
-  //         const result = await processContent(
-  //           "text",
-  //           response.actionType,
-  //           response.text
-  //         );
-  //         // resultsContent.textContent = result;
-  //       } catch (error) {
-  //         // resultsContent.textContent = "Error processing content: " + error.message;
-  //       }
-  //     } else if (response.contentType === "image" && response.imageUrl) {
-  //       // Process image
-  //       try {
-  //         const result = await processContent(
-  //           "image",
-  //           "analyzeImage",
-  //           response.imageUrl
-  //         );
-  //         // resultsContent.textContent = result;
-  //       } catch (error) {
-  //         // resultsContent.textContent = "Error analyzing image: " + error.message;
-  //       }
-  //     } else {
-  //       // resultsContent.textContent = "Please select content on a webpage first.";
-  //     }
-
-  //     // Reset button state
-  //   //   analyzeButton.disabled = false;
-  //   //   analyzeButton.textContent =
-  //   //     response.actionType === "deepResearch"
-  //   //       ? "Research Deeply"
-  //   //       : response.contentType === "image"
-  //   //       ? "Analyze Image"
-  //   //       : "Check Facts";
-  //   });
-  // });
-
-  // Add event listener for the copy button
-  // document.getElementById("copy-btn").addEventListener("click", () => {
-  //   chrome.runtime.sendMessage({ action: "getContent" }, (response) => {
-  //     if (response.contentType === "text" && response.text) {
-  //       // Copy text to clipboard
-  //       navigator.clipboard
-  //         .writeText(response.text)
-  //         .then(() => {
-  //           alert("Text copied to clipboard!");
-  //         })
-  //         .catch((err) => {
-  //           alert("Failed to copy text: " + err);
-  //         });
-  //     } else if (response.contentType === "image" && response.imageUrl) {
-  //       // Copy image URL to clipboard
-  //       navigator.clipboard
-  //         .writeText(response.imageUrl)
-  //         .then(() => {
-  //           alert("Image URL copied to clipboard!");
-  //         })
-  //         .catch((err) => {
-  //           alert("Failed to copy image URL: " + err);
-  //         });
-  //     } else {
-  //       alert("No content to copy.");
-  //     }
-  //   });
-  // });
-});
-
-// Listen for visibility changes - when the panel becomes visible again, refresh content
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") {
-    updateContent();
-  }
 });

@@ -2,7 +2,14 @@
   "name": "FactSnap - One-Click AI fact-checking",
   "version": "1.0",
   "manifest_version": 3,
-  "permissions": ["contextMenus", "sidePanel", "storage", "activeTab"],
+  "permissions": ["contextMenus", "sidePanel", "storage", "activeTab", "identity"],
+  "oauth2": {
+    "client_id": "154787415272-pbnco740mm0614kdjaq7gp6ipqhslkah.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/userinfo.profile",
+      "https://www.googleapis.com/auth/userinfo.email"
+    ]
+  },
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_title": "FactSnap",
