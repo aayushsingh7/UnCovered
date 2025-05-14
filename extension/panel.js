@@ -12,7 +12,9 @@ import {
   fetchAIResponse,
   fetchAllChats,
   fetchChat,
+  fetchMessages,
   searchChat,
+  verifyOrCreateUser,
 } from "./utils/api.js";
 
 const output =
@@ -101,6 +103,7 @@ let quickSearch;
 let factCheck;
 let deepResearchStatus, quickSearchStatus, factCheckStatus;
 let newChatBtn;
+let chatsContainer;
 
 // Refresh DOM references
 function refreshElements() {
@@ -123,6 +126,7 @@ function refreshElements() {
   quickSearch = document.getElementById("quick-search");
   factCheck = document.getElementById("fact-check");
   newChatBtn = document.getElementById("new-chat");
+  chatsContainer = document.getElementById("chats-container");
 
   if (userDetails.email) {
     actionTagElement.addEventListener("click", () => {
@@ -178,9 +182,9 @@ function refreshElements() {
 
     searchInput.addEventListener("keydown", (e) => {
       if (e.key == "Enter" && !loadingAiResponse) {
-        console.log("hello nigga", e.target.value)
+        console.log("hello nigga", e.target.value);
         if (!newMessageDetails.actionType && e.target.value) {
-          console.log("hello nigga part 2")
+          console.log("hello nigga part 2");
           newMessageDetails.actionType = "user-query";
           newMessageDetails.selectedText = null;
           addNewMessage(e.target.value);
@@ -230,25 +234,25 @@ function refreshElements() {
       updateToggle(deepResearch, deepResearchStatus);
     });
 
-    // Helper function to update toggle status
-    function updateToggle(element, status) {
-      element.innerText = status ? "ON" : "OFF";
-      element.classList.toggle("on", status);
-    }
-
     settingsContainer.addEventListener("click", () => {
       settingsContainer.style.display = "none";
     });
 
     newChatBtn.addEventListener("click", () => {
       document.body.innerHTML = newChatLayout(userDetails);
-      refreshElements()
+      refreshElements();
       newMessageDetails.actionType = "";
       newMessageDetails.selectedText = "";
       searchInput.value = "";
-      contentBox.style.display = "none"
-      removeSelectedText.style.display ="none"
+      contentBox.style.display = "none";
+      removeSelectedText.style.display = "none";
     });
+
+    // Helper function to update toggle status
+    function updateToggle(element, status) {
+      element.innerText = status ? "ON" : "OFF";
+      element.classList.toggle("on", status);
+    }
   }
 }
 
@@ -497,9 +501,22 @@ async function fetchUserInfo(token) {
     );
 
     const userInfo = await response.json();
-    await chrome.storage.local.set({ userInfo });
-    document.body.innerHTML = newChatLayout(userInfo);
-    return userInfo;
+    const dbUser = await verifyOrCreateUser(userInfo);
+
+    await chrome.storage.local.set({
+      loggedInUser: {
+        name: dbUser.data.name,
+        _id: dbUser.data._id,
+        email: dbUser.data.email,
+        lastLoggedInDate: new Date().toISOString(),
+      },
+    });
+
+    chrome.storage.local.get(["loggedInUser"], (result) => {
+      console.log("FINAL VALUE INSIDE STORAGE: ", result.loggedInUser);
+      document.body.innerHTML = newChatLayout(result.loggedInUser);
+      return result.loggedInUser;
+    });
   } catch (err) {
     console.error("Failed to fetch user info:", err);
     return null;
@@ -508,38 +525,43 @@ async function fetchUserInfo(token) {
 
 async function getUserInfo() {
   try {
-    // Try silent login
-    let token = await new Promise((resolve, reject) => {
-      chrome.identity.getAuthToken({ interactive: false }, (token) => {
-        if (chrome.runtime.lastError || !token)
+    const result = await new Promise((resolve) =>
+      chrome.storage.local.get(["loggedInUser"], resolve)
+    );
+
+    const user = result.loggedInUser;
+
+    if (user && user._id && user.lastLoggedInDate) {
+      const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+      const now = new Date().getTime();
+      const lastLogin = new Date(user.lastLoggedInDate).getTime();
+
+      // Check if the last login was less than 30 days ago
+      if (now - lastLogin < THIRTY_DAYS_MS) {
+        document.body.innerHTML = newChatLayout(user);
+        return user;
+      }
+    }
+
+    // Otherwise, show loading and re-authenticate
+    document.body.innerHTML = `<div class="login">
+      <h2>FactSnap Authentication</h2>
+      <p>Please Wait, while we verify you...</p>
+    </div>`;
+
+    const token = await new Promise((resolve, reject) => {
+      chrome.identity.getAuthToken({ interactive: true }, (token) => {
+        if (chrome.runtime.lastError || !token) {
           return reject(chrome.runtime.lastError);
+        }
         resolve(token);
       });
     });
 
     return await fetchUserInfo(token);
-  } catch (silentError) {
-    console.warn("Silent login failed:", silentError);
-
-    // Try interactive login
-    try {
-      document.body.innerHTML = `<div class="login">
-      <h2>FactSnap Authentication</h2>
-      <p>Please Wait, while we verify you...</p>
-    </div>`;
-      let token = await new Promise((resolve, reject) => {
-        chrome.identity.getAuthToken({ interactive: true }, (token) => {
-          if (chrome.runtime.lastError || !token)
-            return reject(chrome.runtime.lastError);
-          resolve(token);
-        });
-      });
-
-      return await fetchUserInfo(token);
-    } catch (interactiveError) {
-      console.error("Interactive login failed:", interactiveError);
-      return null;
-    }
+  } catch (error) {
+    console.error("Authentication failed:", error);
+    return null;
   }
 }
 
@@ -574,7 +596,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   );
 
-  // Listen for content updates from the background script
   chrome.runtime.onMessage.addListener((message) => {
     if (
       message.action === "contentUpdated" ||
@@ -590,5 +611,32 @@ document.addEventListener("DOMContentLoaded", async () => {
       searchInput.value = "";
       updateContent();
     }
+  });
+
+  let chats = await fetchAllChats(userDetails._id);
+  chatsContainer.innerHTML += chats
+    .map((chat) => {
+      return `
+    <div class="chat" id="${chat.chatID}">
+      <h4>${chat.title}</h4>
+      <button class="delete-btn">Delete</button>
+    </div>
+  `;
+    })
+    .join("");
+
+  chats.forEach((chat) => {
+    // console.log(chat);
+    const chatElement = document.getElementById(chat.chatID);
+    chatElement.addEventListener("click", async() => {
+      const messages = await fetchMessages(chat.chatID);
+      // messagesContainer.innerHTML += ""
+    });
+
+    const deleteBtn = chatElement.querySelector(".delete-btn");
+    deleteBtn.addEventListener("click", (e) => {
+      e.stopPropagation(); // prevent triggering fetchMessages
+      // deleteChat(chat.chatID);
+    });
   });
 });

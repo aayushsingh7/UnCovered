@@ -309,14 +309,6 @@ export function createContentBox(customPrompt, newMessageDetails, resultsContain
   return { mainBox, contentType };
 }
 
-
-async function authenticateUser() {
-  try {
-  } catch (err) {
-    console.log(err);
-  }
-}
-
 export function newChatLayout (userInfo) {
   return (`
     <header class="header">
@@ -363,23 +355,7 @@ export function newChatLayout (userInfo) {
         <img src="./assets/close.svg" alt="" id="close-btn" />
       </div>
 
-      <div class="chats">
-        <div class="chat">
-          <h4>Somethings wrong when the guy has blood all over his hand</h4>
-          <button>Delete</button>
-        </div>
-        <div class="chat">
-          <h4>Somethings wrong when the guy has blood all over his hand</h4>
-          <button>Delete</button>
-        </div>
-        <div class="chat">
-          <h4>Somethings wrong when the guy has blood all over his hand</h4>
-          <button>Delete</button>
-        </div>
-        <div class="chat">
-          <h4>Somethings wrong when the guy has blood all over his hand</h4>
-          <button>Delete</button>
-        </div>
+      <div class="chats" id="chats-container">
       </div>
 
       <div class="settings" id="settings-btn">
