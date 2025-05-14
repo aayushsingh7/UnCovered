@@ -42,14 +42,23 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   // Handle text selection options
   if (
     info.menuItemId === "factSnapTextCheckFacts" ||
-    info.menuItemId === "factSnapTextDeepResearch"
+    info.menuItemId === "factSnapTextDeepResearch" ||
+    info.menuItemId === "factSnapTextQuickSearch"
   ) {
     // Get the selected text
     const selectedText = info.selectionText;
-    const actionType =
-      info.menuItemId === "factSnapTextCheckFacts"
-        ? "checkFacts"
-        : "deepResearch";
+    
+    // Determine the action type based on which menu item was clicked
+    let actionType;
+    if (info.menuItemId === "factSnapTextCheckFacts") {
+      actionType = "checkFacts";
+    } else if (info.menuItemId === "factSnapTextQuickSearch") {
+      actionType = "quickSearch";
+    } else if (info.menuItemId === "factSnapTextDeepResearch") {
+      actionType = "deepResearch";
+    }
+
+    console.log("background.js", info.menuItemId, actionType);
 
     // Store the selected text and action type so the side panel can access it
     chrome.storage.local.set(
@@ -62,6 +71,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       () => {
         // Open the side panel
         chrome.sidePanel.open({ tabId: tab.id }).then(() => {
+          console.log("chrome,sidePanel.open()", actionType)
           // Notify the panel that there's new text available
           chrome.runtime.sendMessage({
             action: "contentUpdated",
@@ -104,13 +114,14 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "getSelectedText") {
     // Retrieve the selected text from storage and send it back
+    console.log("get selected text", message.action, actionType)
     chrome.storage.local.get(
       ["selectedText", "contentType", "actionType"],
       (data) => {
         sendResponse({
           text: data.selectedText || "No text selected",
           contentType: data.contentType || "text",
-          actionType: data.actionType || "checkFacts",
+          actionType: data.actionType || "quickSearch",
         });
       }
     );
@@ -137,15 +148,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.storage.local.get(
       ["selectedText", "selectedImage", "contentType", "actionType"],
       (data) => {
+        console.log("get content final", data)
         sendResponse({
           text: data.selectedText || null,
           imageUrl: data.selectedImage || null,
           contentType: data.contentType || "text",
-          actionType: data.actionType || "checkFacts",
+          actionType: data.actionType || "quickSearch",
         });
       }
     );
-    
+
     return true; // Required for asynchronous sendResponse
   }
 });

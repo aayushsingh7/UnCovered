@@ -190,7 +190,11 @@ export function createContentBox(customPrompt, newMessageDetails, resultsContain
       : "action-tag research";
   actionTag.innerText = newMessageDetails.actionType;
   contentType.appendChild(actionTag);
-  contentBox.appendChild(contentType);
+  console.log(newMessageDetails)
+  if(newMessageDetails.actionType !== "user-query"){
+    console.log("passed and success-----------")
+    contentBox.appendChild(contentType); 
+  }
 
   // Custom prompt paragraph
   const prompt = document.createElement("p");
@@ -221,13 +225,14 @@ export function createContentBox(customPrompt, newMessageDetails, resultsContain
     selectedText.className = "selected-text";
     selectedText.innerText = newMessageDetails.selectedText;
     contentContainer.appendChild(selectedText);
-  } else {
-    const noContent = document.createElement("div");
-    noContent.className = "no-selection";
-    noContent.textContent =
-      "No content selected. Please select text or an image on a webpage, right-click, and choose a FactSnap option.";
-    contentContainer.appendChild(noContent);
-  }
+  } 
+  // else {
+  //   const noContent = document.createElement("div");
+  //   noContent.className = "no-selection";
+  //   noContent.textContent =
+  //     "No content selected. Please select text or an image on a webpage, right-click, and choose a FactSnap option.";
+  //   contentContainer.appendChild(noContent);
+  // }
 
   contentBox.appendChild(contentContainer);
 
@@ -267,7 +272,7 @@ export function createContentBox(customPrompt, newMessageDetails, resultsContain
   const panel1 = document.createElement("div");
   panel1.className = "tab-panel";
   panel1.dataset.tab = "answer";
-  panel1.textContent = "Generating response..."; // default content
+  panel1.textContent = newMessageDetails.actionType.startsWith("Deep") ?"Deep research may take 3 to 5 minutes..." : "Generating response..."; // default content
   panel1.style.display = "block"; // only this is visible initially
 
   const panel2 = document.createElement("div");
@@ -286,6 +291,9 @@ export function createContentBox(customPrompt, newMessageDetails, resultsContain
   resultsContent.appendChild(panel3);
 
   // Combine everything
+  if(newMessageDetails.selectedText) {
+
+  }
   resultsContainer.appendChild(resultTabs);
   resultsContainer.appendChild(resultsContent);
   contentBox.appendChild(resultsContainer);
@@ -307,4 +315,118 @@ async function authenticateUser() {
   } catch (err) {
     console.log(err);
   }
+}
+
+export function newChatLayout (userInfo) {
+  return (`
+    <header class="header">
+      <nav>
+        <img src="./assets/menu.svg" alt="" id="menu" />
+        <h3>FactSnap</h3>
+        <img src="./assets/new-chat.svg" alt="" id="new-chat" />
+      </nav>
+    </header>
+
+    <div class="settings-contanier" id="settings-contanier"">
+      <div class="settings-box">
+        <h2>Settings</h2>
+        <div class="options-container">
+          <h3>Auto Send Query</h3>
+          <p>
+            When enabled, your query will be automatically submitted to the AI
+            without any additional prompts or instructions. This feature is
+            ideal for fast, instant responses.
+          </p>
+          <div class="options">
+            <div>
+              <h4>Deep Research</h4>
+              <button  id="deep-research">OFF</button>
+            </div>
+
+            <div>
+              <h4>Fact-Checking</h4>
+              <button  id="fact-check">OFF</button>
+            </div>
+
+            <div>
+              <h4>Quick Search</h4>
+              <button id="quick-search">ON</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidenav" id="sidenav">
+      <div class="header">
+        <input type="text" placeholder="Search Any Chat" />
+        <img src="./assets/close.svg" alt="" id="close-btn" />
+      </div>
+
+      <div class="chats">
+        <div class="chat">
+          <h4>Somethings wrong when the guy has blood all over his hand</h4>
+          <button>Delete</button>
+        </div>
+        <div class="chat">
+          <h4>Somethings wrong when the guy has blood all over his hand</h4>
+          <button>Delete</button>
+        </div>
+        <div class="chat">
+          <h4>Somethings wrong when the guy has blood all over his hand</h4>
+          <button>Delete</button>
+        </div>
+        <div class="chat">
+          <h4>Somethings wrong when the guy has blood all over his hand</h4>
+          <button>Delete</button>
+        </div>
+      </div>
+
+      <div class="settings" id="settings-btn">
+      <h4>Settings</h4>
+      </div>
+    </div>
+
+    <div class="messages" id="messages-container">
+      <div class="intro" id="intro">
+  <h3>Hey there, ${userInfo?.name?.split(" ")[0]}! 👋</h3>
+  <p>It's so lovely to see you here. 💫 How can I make your day better today? 😊</p>
+</div>
+
+    </div>
+
+    <div class="search-box" id="search-box">
+    <button class="remove-selected-text" id="remove-selected-text"><img src="./assets/close.svg" alt="close"/></button>
+      <div class="content-box" id="content-box">
+        <div id="content-type" class="content-type">
+          <span id="content-label" class="content-label"
+            >Selected Content:</span
+          >
+          <span id="action-tag" class="action-tag">Fact Check</span>
+        </div>
+
+        <div id="content-container" class="content-container">
+          <div id="selected-text" class="selected-text"></div>
+          <div id="selected-image-container" class="selected-image-container">
+            <img
+              id="selected-image"
+              src=""
+              alt="Selected image"
+              class="selected-image"
+            />
+          </div>
+          <div id="no-content" class="no-selection">
+            No content selected. Please select text or an image on a webpage,
+            right-click, and choose a FactSnap option.
+          </div>
+        </div>
+      </div>
+
+      <input
+        type="text"
+        id="search-input"
+        placeholder="Anything Specific You Want To Know?"
+      />
+    </div>
+    `)
 }

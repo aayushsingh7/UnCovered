@@ -6,6 +6,7 @@ import {
   formatAiResponse,
   generateRandomId,
   getReadableDomain,
+  newChatLayout,
 } from "./utils/helpers.js";
 import {
   fetchAIResponse,
@@ -92,6 +93,14 @@ let menuBar;
 let closeMenuBar;
 let searchBox;
 let searchInput;
+let removeSelectedText;
+let settingsBtn;
+let settingsContainer;
+let deepResearch;
+let quickSearch;
+let factCheck;
+let deepResearchStatus, quickSearchStatus, factCheckStatus;
+let newChatBtn;
 
 // Refresh DOM references
 function refreshElements() {
@@ -107,6 +116,13 @@ function refreshElements() {
   closeMenuBar = document.getElementById("close-btn");
   searchBox = document.getElementById("search-box");
   searchInput = document.getElementById("search-input") || null;
+  removeSelectedText = document.getElementById("remove-selected-text");
+  settingsBtn = document.getElementById("settings-btn");
+  settingsContainer = document.getElementById("settings-contanier");
+  deepResearch = document.getElementById("deep-research");
+  quickSearch = document.getElementById("quick-search");
+  factCheck = document.getElementById("fact-check");
+  newChatBtn = document.getElementById("new-chat");
 
   if (userDetails.email) {
     actionTagElement.addEventListener("click", () => {
@@ -161,21 +177,77 @@ function refreshElements() {
     });
 
     searchInput.addEventListener("keydown", (e) => {
-      // if (!newMessageDetails.actionType) {
-      //   if (e.target.value == "") {
-      //     setTimeout(() => {
-      //       contentBox.style.display = "none";
-      //       contentBox.classList.remove("show-content-box");
-      //     }, 400);
-      //   } else {
-      //     contentBox.style.display = "flex";
-      //     contentBox.classList.add("show-content-box");
-      //   }
-      // }
       if (e.key == "Enter" && !loadingAiResponse) {
-        // console.log("searchInput.addEventListener")
-        addNewMessage(e.target.value);
+        console.log("hello nigga", e.target.value)
+        if (!newMessageDetails.actionType && e.target.value) {
+          console.log("hello nigga part 2")
+          newMessageDetails.actionType = "user-query";
+          newMessageDetails.selectedText = null;
+          addNewMessage(e.target.value);
+        } else {
+          addNewMessage(e.target.value);
+        }
       }
+    });
+
+    removeSelectedText.addEventListener("click", () => {
+      newMessageDetails.actionType = "";
+      newMessageDetails.selectedText = "";
+      contentBox.style.display = "none";
+      removeSelectedText.style.display = "none";
+    });
+
+    // Attach event listeners just once
+    deepResearch.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deepResearchStatus = !deepResearchStatus;
+      updateToggle(deepResearch, deepResearchStatus);
+      chrome.storage.local.set({ deepResearch: deepResearchStatus });
+    });
+
+    quickSearch.addEventListener("click", (e) => {
+      e.stopPropagation();
+      quickSearchStatus = !quickSearchStatus;
+      updateToggle(quickSearch, quickSearchStatus);
+      chrome.storage.local.set({ quickSearch: quickSearchStatus });
+    });
+
+    factCheck.addEventListener("click", (e) => {
+      e.stopPropagation();
+      factCheckStatus = !factCheckStatus;
+      updateToggle(factCheck, factCheckStatus);
+      chrome.storage.local.set({ factCheck: factCheckStatus });
+    });
+
+    settingsBtn.addEventListener("click", () => {
+      // Show settings UI
+      sideNavbar.classList.remove("show-sidenav");
+      settingsContainer.style.display = "flex";
+
+      // Update button visuals based on current status
+      updateToggle(factCheck, factCheckStatus);
+      updateToggle(quickSearch, quickSearchStatus);
+      updateToggle(deepResearch, deepResearchStatus);
+    });
+
+    // Helper function to update toggle status
+    function updateToggle(element, status) {
+      element.innerText = status ? "ON" : "OFF";
+      element.classList.toggle("on", status);
+    }
+
+    settingsContainer.addEventListener("click", () => {
+      settingsContainer.style.display = "none";
+    });
+
+    newChatBtn.addEventListener("click", () => {
+      document.body.innerHTML = newChatLayout(userDetails);
+      refreshElements()
+      newMessageDetails.actionType = "";
+      newMessageDetails.selectedText = "";
+      searchInput.value = "";
+      contentBox.style.display = "none"
+      removeSelectedText.style.display ="none"
     });
   }
 }
@@ -262,14 +334,15 @@ async function addNewMessage(customPrompt) {
 
     searchInput.value = "";
     contentBox.classList.remove("show-content-box");
-   contentBox.style.display = "none";
+    contentBox.style.display = "none";
+    removeSelectedText.style.display = "none";
     // requestAnimationFrame(() => {
     //   messagesContainer.scrollTop = newMessage.offsetTop - 60;
     // });
     messagesContainer.scrollTo({
-  top: newMessage.offsetTop - 60,
-  behavior: 'smooth'
-});
+      top: newMessage.offsetTop - 70,
+      behavior: "smooth",
+    });
 
     const { followUps, markdown, sources, tasks, thinking, images } =
       await formatAiResponse(output);
@@ -323,7 +396,7 @@ async function addNewMessage(customPrompt) {
       };
 
       requestAnimationFrame(() => {
-        messagesContainer.scrollTop = newMessage.offsetTop - 60;
+        messagesContainer.scrollTop = newMessage.offsetTop - 70;
       });
 
       loadingAiResponse = false;
@@ -339,8 +412,8 @@ function updateContent() {
   textElement.style.display = "none";
   imageContainer.style.display = "none";
   noContentElement.style.display = "none";
+
   chrome.runtime.sendMessage({ action: "getContent" }, (response) => {
-    console.log("------------------ IMPORTANT ------------------", response);
     if (chrome.runtime.lastError) {
       noContentElement.style.display = "block";
       noContentElement.textContent = "Error retrieving content.";
@@ -352,9 +425,8 @@ function updateContent() {
     // Update UI based on content type and action type
     if (response.contentType === "text" && response.text) {
       contentBox.style.display = "block";
+      removeSelectedText.style.display = "block";
       contentBox.classList.add("show-content-box");
-      // Display text content
-      // contentLabelElement.textContent = "Selected Content:";
       textElement.style.display = "block";
       newMessageDetails.selectedText = response.text;
       textElement.textContent = response.text;
@@ -365,19 +437,28 @@ function updateContent() {
         actionTagElement.className = "action-tag research";
         // analyzeButton.textContent = "Research Deeply";
         newMessageDetails.actionType = "Deep Research";
-        console.log("inside deepResearch", newMessageDetails, response);
-      } else {
-        console.log("Change is required");
+        if (deepResearchStatus) {
+          addNewMessage();
+        }
+      } else if (response.actionType === "checkFacts") {
         actionTagElement.textContent = "Fact Check";
         actionTagElement.className = "action-tag";
-        // analyzeButton.textContent = "Check Facts";
         newMessageDetails.actionType = "Fact Check";
-        console.log("inslide fact check", newMessageDetails, response);
-        console.log("-------------------------------------------------------");
-        // resultsTitle.textContent = "Fact Check Results:";
+        if (factCheckStatus) {
+          addNewMessage();
+        }
+      } else {
+        actionTagElement.textContent = "Quick Search";
+        actionTagElement.className = "action-tag";
+        // analyzeButton.textContent = "Check Facts";
+        newMessageDetails.actionType = "Quick Search";
+        if (quickSearchStatus) {
+          addNewMessage();
+        }
       }
     } else if (response.contentType === "image" && response.imageUrl) {
       contentBox.style.display = "flex";
+      removeSelectedText.style.display = "block";
       contentBox.classList.add("show-content-box");
       // Display image content
       // contentLabelElement.textContent = "Selected Image:";
@@ -417,82 +498,7 @@ async function fetchUserInfo(token) {
 
     const userInfo = await response.json();
     await chrome.storage.local.set({ userInfo });
-    document.body.innerHTML = `
-    <header class="header">
-      <nav>
-        <img src="./assets/menu.svg" alt="" id="menu" />
-        <h3>New Chat</h3>
-      </nav>
-    </header>
-
-    <div class="sidenav" id="sidenav">
-      <div class="header">
-        <input type="text" placeholder="Search Any Chat" />
-        <img src="./assets/close.svg" alt="" id="close-btn" />
-      </div>
-
-      <div class="chats">
-        <div class="chat">
-          <h4>Somethings wrong when the guy has blood all over his hand</h4>
-          <button>Delete</button>
-        </div>
-        <div class="chat">
-          <h4>Somethings wrong when the guy has blood all over his hand</h4>
-          <button>Delete</button>
-        </div>
-        <div class="chat">
-          <h4>Somethings wrong when the guy has blood all over his hand</h4>
-          <button>Delete</button>
-        </div>
-        <div class="chat">
-          <h4>Somethings wrong when the guy has blood all over his hand</h4>
-          <button>Delete</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="messages" id="messages-container">
-      <div class="intro" id="intro">
-  <h3>Hey there, ${userInfo?.name?.split(" ")[0]}! 👋</h3>
-  <p>It's so lovely to see you here. 💫 How can I make your day better today? 😊</p>
-</div>
-
-    </div>
-
-    <div class="search-box" id="search-box">
-      <div class="content-box" id="content-box">
-        <div id="content-type" class="content-type">
-          <span id="content-label" class="content-label"
-            >Selected Content:</span
-          >
-          <span id="action-tag" class="action-tag">Fact Check</span>
-        </div>
-
-        <div id="content-container" class="content-container">
-          <div id="selected-text" class="selected-text"></div>
-          <div id="selected-image-container" class="selected-image-container">
-            <img
-              id="selected-image"
-              src=""
-              alt="Selected image"
-              class="selected-image"
-            />
-          </div>
-          <div id="no-content" class="no-selection">
-            No content selected. Please select text or an image on a webpage,
-            right-click, and choose a FactSnap option.
-          </div>
-        </div>
-      </div>
-
-      <input
-        type="text"
-        id="search-input"
-        placeholder="Anything Specific You Want To Know?"
-      />
-    </div>
-    `;
-
+    document.body.innerHTML = newChatLayout(userInfo);
     return userInfo;
   } catch (err) {
     console.error("Failed to fetch user info:", err);
@@ -541,8 +547,32 @@ document.addEventListener("DOMContentLoaded", async () => {
   const user = await getUserInfo();
   userDetails = user;
 
-  refreshElements();
-  updateContent();
+  chrome.storage.local.get(
+    ["deepResearch", "factCheck", "quickSearch"],
+    (result) => {
+      if (
+        result.deepResearch == null ||
+        result.quickSearch == null ||
+        result.factCheck == null
+      ) {
+        chrome.storage.local.set(
+          { deepResearch: false, quickSearch: true, factCheck: false },
+          (newRes) => {
+            deepResearchStatus = newRes.deepResearch;
+            quickSearchStatus = newRes.quickSearch;
+            factCheckStatus = newRes.factCheck;
+          }
+        );
+      } else {
+        deepResearchStatus = result.deepResearch;
+        quickSearchStatus = result.quickSearch;
+        factCheckStatus = result.factCheck;
+      }
+
+      refreshElements();
+      updateContent();
+    }
+  );
 
   // Listen for content updates from the background script
   chrome.runtime.onMessage.addListener((message) => {
@@ -550,6 +580,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       message.action === "contentUpdated" ||
       message.action === "textUpdated"
     ) {
+      // console.log("------?/--------------------------------------new message received--------------------------------------------", message);
+      chrome.storage.local.get(
+        ["selectedText", "selectedImage", "contentType", "actionType"],
+        (data) => {
+          // console.log("data", data);
+        }
+      );
       searchInput.value = "";
       updateContent();
     }
