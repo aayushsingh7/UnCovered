@@ -7,9 +7,9 @@ class AIController {
     this.aiService = new AIService();
   }
   public async generateAIResponse(req: Request, res: Response) {
-    const { userID, chatID, prompt, actionType, imageURL } = req.body;
+    const { userID, chatID, prompt, actionType, imageURL,selectedText } = req.body;
     try {
-      const generatedResponse = await this.aiService.generateResposne(userID,chatID,prompt,actionType,imageURL)
+      const generatedResponse = await this.aiService.generateResposne(userID,chatID,selectedText,prompt,actionType,imageURL)
       res.status(generatedResponse.status).send(generatedResponse)
     } catch (err: any) {
       res.status(err.statusCode).send({ success: false, message: err.message });

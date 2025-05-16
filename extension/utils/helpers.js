@@ -43,15 +43,7 @@ export async function formatAiResponse(response) {
   const tasks = mainBody[2].tasks;
   const followUps = mainBody[3].followUp;
 
-  const formatted = mainBody[0].replace(/\[(\d+)\]/g, (match, num) => {
-    const index = parseInt(num, 10);
-    const source = sources[index - 1];
-    if (source && source.url) {
-      return `[${match}](${source.url})`;
-    } else {
-      return match;
-    }
-  });
+  const formatted = replaceWithClickableLink(mainBody[0], sources);
 
   const detailedSources = [],
     images = [];
@@ -108,6 +100,19 @@ export async function formatAiResponse(response) {
     followUps,
     images,
   };
+}
+
+export function replaceWithClickableLink(body, sources) {
+  console.log(sources);
+  return body.replace(/\[(\d+)\]/g, (match, num) => {
+    const index = parseInt(num, 10);
+    const source = sources[index - 1];
+    if (source) {
+      return `[${match}](${source})`;
+    } else {
+      return match;
+    }
+  });
 }
 
 export function createSourceBox(fetchLinkDetails) {
@@ -168,7 +173,11 @@ export function generateRandomId() {
   return id;
 }
 
-export function createContentBox(customPrompt, newMessageDetails, resultsContainerObj) {
+export function createContentBox(
+  customPrompt,
+  newMessageDetails,
+  resultsContainerObj
+) {
   console.log("This is the final stage: newMessageDetails", newMessageDetails);
   const randomId = generateRandomId();
   const mainBox = document.createElement("div");
@@ -188,12 +197,17 @@ export function createContentBox(customPrompt, newMessageDetails, resultsContain
     newMessageDetails.actionType == "Fact Check"
       ? "action-tag"
       : "action-tag research";
-  actionTag.innerText = newMessageDetails.actionType;
+  const actionTagArr = newMessageDetails.actionType.split("-");
+  const capitalize = (word) =>
+    word[0].toUpperCase() + word.slice(1).toLowerCase();
+  actionTag.innerText =
+    capitalize(actionTagArr[0]) + " " + capitalize(actionTagArr[1]);
+
   contentType.appendChild(actionTag);
-  console.log(newMessageDetails)
-  if(newMessageDetails.actionType !== "user-query"){
-    console.log("passed and success-----------")
-    contentBox.appendChild(contentType); 
+  console.log(newMessageDetails);
+  if (newMessageDetails.actionType !== "user-query") {
+    console.log("passed and success-----------");
+    contentBox.appendChild(contentType);
   }
 
   // Custom prompt paragraph
@@ -217,15 +231,12 @@ export function createContentBox(customPrompt, newMessageDetails, resultsContain
 
     selectedImageContainer.appendChild(selectedImage);
     contentContainer.appendChild(selectedImageContainer);
-  } else if (
-    newMessageDetails.actionType.startsWith("Fact") ||
-    newMessageDetails.actionType.startsWith("Deep")
-  ) {
+  } else if (newMessageDetails.selectedText) {
     const selectedText = document.createElement("div");
     selectedText.className = "selected-text";
     selectedText.innerText = newMessageDetails.selectedText;
     contentContainer.appendChild(selectedText);
-  } 
+  }
   // else {
   //   const noContent = document.createElement("div");
   //   noContent.className = "no-selection";
@@ -255,15 +266,8 @@ export function createContentBox(customPrompt, newMessageDetails, resultsContain
   tab2.dataset.tab = "sources";
   tab2.style.display = "none";
 
-  const tab3 = document.createElement("span");
-  tab3.className = "tab";
-  tab3.textContent = "Tasks";
-  tab3.dataset.tab = "tasks";
-  tab3.style.display = "none";
-
   resultTabs.appendChild(tab1);
   resultTabs.appendChild(tab2);
-  resultTabs.appendChild(tab3);
 
   // Content panels
   const resultsContent = document.createElement("div");
@@ -272,7 +276,9 @@ export function createContentBox(customPrompt, newMessageDetails, resultsContain
   const panel1 = document.createElement("div");
   panel1.className = "tab-panel";
   panel1.dataset.tab = "answer";
-  panel1.textContent = newMessageDetails.actionType.startsWith("Deep") ?"Deep research may take 3 to 5 minutes..." : "Generating response..."; // default content
+  panel1.textContent = newMessageDetails.actionType.startsWith("Deep")
+    ? "Deep research may take 3 to 5 minutes..."
+    : "Generating response..."; // default content
   panel1.style.display = "block"; // only this is visible initially
 
   const panel2 = document.createElement("div");
@@ -280,20 +286,9 @@ export function createContentBox(customPrompt, newMessageDetails, resultsContain
   panel2.dataset.tab = "sources";
   panel2.style.display = "none";
 
-  const panel3 = document.createElement("div");
-  panel3.className = "tab-panel";
-  panel3.dataset.tab = "tasks";
-  panel3.style.display = "none";
-  panel3.textContent = "Tasks will be listed here.";
-
   resultsContent.appendChild(panel1);
   resultsContent.appendChild(panel2);
-  resultsContent.appendChild(panel3);
 
-  // Combine everything
-  if(newMessageDetails.selectedText) {
-
-  }
   resultsContainer.appendChild(resultTabs);
   resultsContainer.appendChild(resultsContent);
   contentBox.appendChild(resultsContainer);
@@ -301,16 +296,14 @@ export function createContentBox(customPrompt, newMessageDetails, resultsContain
 
   resultsContainerObj.tab1 = tab1;
   resultsContainerObj.tab2 = tab2;
-  resultsContainerObj.tab3 = tab3;
   resultsContainerObj.panel1 = panel1;
   resultsContainerObj.panel2 = panel2;
-  resultsContainerObj.panel3 = panel3;
 
   return { mainBox, contentType };
 }
 
-export function newChatLayout (userInfo) {
-  return (`
+export function newChatLayout(userInfo) {
+  return `
     <header class="header">
       <nav>
         <img src="./assets/menu.svg" alt="" id="menu" />
@@ -355,8 +348,7 @@ export function newChatLayout (userInfo) {
         <img src="./assets/close.svg" alt="" id="close-btn" />
       </div>
 
-      <div class="chats" id="chats-container">
-      </div>
+      <div class="chats" id="chats-container"></div>
 
       <div class="settings" id="settings-btn">
       <h4>Settings</h4>
@@ -378,7 +370,6 @@ export function newChatLayout (userInfo) {
           <span id="content-label" class="content-label"
             >Selected Content:</span
           >
-          <span id="action-tag" class="action-tag">Fact Check</span>
         </div>
 
         <div id="content-container" class="content-container">
@@ -398,11 +389,16 @@ export function newChatLayout (userInfo) {
         </div>
       </div>
 
-      <input
-        type="text"
-        id="search-input"
-        placeholder="Anything Specific You Want To Know?"
-      />
+     <div class="input-container">
+      <textarea id="search-input" style="overflow-y: auto; max-height: 150px; resize: none;" placeholder="Anything Specific You Want To Know?"></textarea>
+      <div class="input-container-options">
+      <div class="query-types">
+      <span data-name="quick-search" title="Quick Search" ><img src="./assets/quick.svg" alt=""/></span>
+      <span data-name="fact-check" title="Fact Check"><img src="./assets/fact.svg" alt=""/></span>
+      <span data-name="deep-research" title="Deep Research"><img src="./assets/deep.svg" alt=""/></span>
+      </div>
+      <button id="send-btn">Send</button>
+      </div>
     </div>
-    `)
+    `;
 }

@@ -1,114 +1,23 @@
+import { response } from "express";
 import CustomError from "../../utils/customError";
 import formatAiResponse from "../../utils/formatAiResponse";
 import ChatService from "./chatService";
-import dotenv from "dotenv"
+import dotenv from "dotenv";
 dotenv.config();
-
-const systemMessage =  `
-You are a highly intelligent, analytical, and structured assistant built to deliver precise, high-impact, and research-backed responses.
-
-For every user query, your output must be structured into exactly four clearly labeled sections, returned in a strict JSON array format. Each section plays a critical role and must follow the specification below without deviation.
-
----
-
-Query Type: {{queyType}}
-
-Your response MUST include an additional object — the fifth element in the JSON array — containing a single key called "verdict" with one of the following values:
-
-- "true"
-- "false"
-- "not-confirmed"
-
-In that case, your response must be a **five-element JSON array**, with the "verdict" object added **after** the four standard sections.
-
----
-
-📦 Output Structure (Standard or CheckFacts Mode)
-
-### Always return a JSON array in this order:
-[
-  "<Markdown Final Answer>",
-  { "sources": [ { "url": "...", "reference": "..." } ] },
-  { "tasks": [ { "task": "...", "timeTaken": 0.0 } ] },
-  { "followUpQuestions": ["...", "...", "..."] },
-  { "verdict": "true" | "false" | "not-confirmed" } 
-  {"title":"short,meaningfull & topic related title"}
-]
-
----
-
-1. Final Answer (Markdown String)
-- First element: a plain string with clean Markdown.
-- Start with a **Quick Summary** (1–2 lines).
-- Use headings, bold text, bullet points, semantic formatting.
-
-2. Sources (Object)
-- JSON object with key "sources", value is an array of source objects.
-- Each source object must have:
-  - "url": the source link
-  - "reference": a short quote or paraphrased excerpt
-- If no sources were used: { "sources": [] }
-
-3. Tasks Performed (Object)
-- JSON object with key "tasks", value is an array of steps taken.
-- Each step must include:
-  - "task": description of the cognitive action
-  - "timeTaken": estimated duration in seconds
-
-4. Follow-up Questions (Object)
-- JSON object with key "followUpQuestions", value is an array of open-ended, topic-relevant questions.
-
-5. Verdict (Object) — Only for checkFacts else verdict:null
-- JSON object: { "verdict": "true" } or "false" or "confirmed"
-- Only include this as the fifth item if queryType === "checkFacts"
-
-- 6. Short, meaningfull & topic related title
-
----
-
-✅ Example Output for queryType: "checkFacts"
-
-[
-  "### Quick Answer\\n\\nYes, this claim is supported by reliable sources...\\n\\n### Explanation\\n- Multiple independent studies confirm the correlation...",
-  {
-    "sources": [
-      {
-        "url": "https://example.com/claim",
-        "reference": "A 2023 meta-analysis found consistent support for..."
-      }
-    ]
-  },
-  {
-    "tasks": [
-      { "task": "Cross-checked factual claims with trusted sources", "timeTaken": 1.5 }
-    ]
-  },
-  {
-    "followUpQuestions": [
-      "What are the implications if this claim is true?",
-      "Have there been major disputes about this issue?"
-    ]
-  },
-  {
-    "verdict": "true"
-  },
-  {
-  "title":"Claim anaylsis"
-  }
-]
-
----
-
-⚠️ This structure must be followed precisely. Do not add extra metadata, keys, wrappers, or commentary. Any deviation will be treated as invalid output.
-`;
-
 
 class AIService {
   private chatService: any;
   constructor() {
     this.chatService = new ChatService();
   }
-  public async generateResposne(userID:string, chatID:string, prompt: string, actionType: string,imageURL:string) {
+  public async generateResposne(
+    userID: string,
+    chatID: string,
+    selectedText: string,
+    prompt: string,
+    actionType: string,
+    imageURL: string
+  ) {
     try {
       const response = await fetch(
         "https://api.perplexity.ai/chat/completions",
@@ -120,49 +29,118 @@ class AIService {
           },
           body: JSON.stringify({
             model:
-              actionType == "deepResearch"
-                ? "sonar-reasoning-pro"
-                : "sonar-pro", // or another supported model
+              actionType == "deep-research"
+                ? "sonar-deep-research"
+                : "sonar-reasoning",
             messages: [
               {
                 role: "system",
-                content: systemMessage,
+                content:
+                  'You are a precise, structured, and intelligent assistant. Always return answers in a strict JSON object format with exactly these 5 fields in this order: shortAnswer, detailedAnswer, followUpQuestions, verdict, and title. Do not include a sources field. Do not use code blocks, markdown wrappers, or any extra text.\n\n📦 Output Format:\n{\n  "shortAnswer": "## Short Answer\\nYour answer here",\n  "detailedAnswer": "## Detailed Answer\\nDetailed analysis using tables, bullet points, etc.",\n  "followUpQuestions": [\n    "Follow-up question 1?",\n    "Follow-up question 2?",\n    "Follow-up question 3?"\n  ],\n  "verdict": "not-confirmed | true | false",\n  "title": "Descriptive, concise title"\n}\n\n---\n\n📝 Final Answer Rules:\n\n- shortAnswer and detailedAnswer must always follow the instructions for the given queryType:\n  - deep-research: shortAnswer is a brief summary (1–2 sentences), detailedAnswer is a full, structured analysis with sections and headings.\n  - fact-check: shortAnswer is a short conclusive summary (e.g., "This claim is mostly false."), detailedAnswer includes evidence, breakdown, counterpoints, and limitations.\n  - quick-search: shortAnswer is a concise factual answer (1–3 sentences), detailedAnswer expands briefly if needed but stays focused.\n\n- followUpQuestions should be 2–4 relevant, thoughtful questions.\n- verdict should be a concise status (e.g., "confirmed", "not-confirmed", "inconclusive").\n- title should be a clear, descriptive headline.\n\nRemember: do not mention or include sources inside the JSON response. Citations will be provided separately by the system.',
               },
+
               {
                 role: "user",
-                content: prompt,
+                content: `
+Query Type: ${actionType}
+User Prompt: ${
+                  prompt?.trim()
+                    ? prompt
+                    : actionType.startsWith("fact-check")
+                    ? "Please verify the accuracy of this claim. Start with a short conclusion, then present supporting evidence and counterpoints."
+                    : actionType.startsWith("deep-research")
+                    ? "Please provide a comprehensive analysis of this topic. Start with a short summary, followed by structured insights."
+                    : "Please provide a clear and concise answer to the question."
+                }
+Context: ${selectedText?.trim() || "No additional context provided."}
+`,
               },
             ],
+            response_format: {
+              type: "json_schema",
+              json_schema: {
+                schema: {
+                  type: "object",
+                  properties: {
+                    shortAnswer: { type: "string" },
+                    detailedAnswer: { type: "string" },
+                    followUpQuestions: {
+                      type: "array",
+                      items: { type: "string" },
+                    },
+                    verdict: {
+                      type: "string",
+                      enum: ["true", "false", "not-confirmed"],
+                    },
+                    title: { type: "string" },
+                  },
+                  required: [
+                    "shortAnswer",
+                    "detailedAnswer",
+                    "followUpQuestions",
+                    "verdict",
+                    "title",
+                  ],
+                },
+              },
+            },
           }),
         }
       );
       let data = await response.json();
-      const {followUpQuestions,markdown,sources,tasks,title,verdict} = formatAiResponse(data.choices[0].message.content)
+      // return {
+      //   success: true,
+      //   message: "b",
+      //   status: 200,
+      //   data: data,
+      //   sources:data.citations,
+      //   finally:formatAiResponse(data.choices[0].message.content)
+      // };
 
-      let createNewMessage = await this.chatService.addNewMessage(userID,chatID,title,{
-        verdict,
-        responseModel:actionType.startsWith("deep") ? "sonar-reasoning-pro": "sonar-pro",
-        prompt,
-        actionType,
-        imageURL:actionType.startsWith("image") ? imageURL : null,
-        answer:markdown,
-        sources,
-        tasks,
-        responseRawJSON:data.choices[0].message.content,
-      })
+      // console.log({output})
+      //
+      const { followUpQuestions, markdown, title, verdict } = formatAiResponse(
+        data.choices[0].message.content
+      );
+
+      // console.log(".....chat id inside the server.....")
+
+      let createNewMessage = await this.chatService.addNewMessage(
+        userID,
+        chatID,
+        title,
+        {
+          verdict,
+          responseModel: actionType.startsWith("deep")
+            ? "sonar-reasoning-pro"
+            : "sonar-pro",
+          prompt,
+          selectedText,
+          actionType,
+          imageURL: actionType.startsWith("image") ? imageURL : null,
+          answer: markdown,
+          sources: data.citations,
+          responseRawJSON: data.choices[0].message.content,
+        }
+      );
       return {
-       newMessage:createNewMessage.newMessage,
-       success:createNewMessage.success,
-       status:createNewMessage.status,
-       message:createNewMessage.message,
-       followUpQuestions,
-       title:title,
-       newChatID:createNewMessage.chatID,
-      }
+        newMessage: createNewMessage.newMessage,
+        success: createNewMessage.success,
+        status: createNewMessage.status,
+        message: createNewMessage.message,
+        followUpQuestions,
+        title: title,
+        newChatID: createNewMessage.chatID,
+      };
     } catch (err: any) {
+      console.log(err);
       throw new CustomError(err.message, 500);
     }
   }
 }
 
 export default AIService;
+
+function escapeSpecialChars(jsonStr: string) {
+  return jsonStr.replace(/\n/g, "\\n");
+}

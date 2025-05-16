@@ -49,6 +49,7 @@ export async function searchChat(query) {
 export async function fetchAIResponse(
   userID,
   chatID,
+  selectedText,
   prompt,
   actionType,
   imageURL
@@ -58,20 +59,21 @@ export async function fetchAIResponse(
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: {
+      body: JSON.stringify({
         userID,
         chatID,
         prompt,
+        selectedText,
         actionType,
         imageURL,
-      },
+      }),
     });
     let data = await response.json();
     console.log("AI GENERATED CODE", data)
-    return data;
+    return {newMessage:data.newMessage,followUpQuestions:data.followUpQuestions,newChat:data.newChat || null};
   } catch (err) {
     console.log(err);
-    return { formattedData: {}, status: false };
+    return { newMessage: {}, followUpQuestions: [] };
   }
 }
 

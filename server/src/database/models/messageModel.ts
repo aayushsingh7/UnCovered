@@ -2,25 +2,23 @@ import { Schema, model } from "mongoose";
 
 const MessageSchema = new Schema(
   {
-    chatID:{type:String,required:true},
+    chatID: { type: String, required: true },
     responseModel: {
       type: String,
       enum: ["sonar-pro", "sonar-reasoning-pro"],
       required: true,
     },
     prompt: { type: String, default: null },
+    selectedText: { type: String, default: null },
     actionType: {
       type: String,
-      enum: ["deepResearch", "quickSearch", "checkFacts", "userQuery"],
+      enum: ["deep-research", "quick-search", "fact-check", "user-query"],
     },
     imageURL: { type: String, default: null },
     answer: { type: String, required: true },
-    sources: [{ url: { type: String }, reference: { type: String } }],
-    tasks: [
-      { task: { type: String }, timeTaken: { type: Number, default: 0 } },
-    ],
+    sources: [{ type: String }],
     verdict: { type: String, enum: ["true", "false", "not-confirmed"] },
-    responseRawJSON:{type:String},
+    responseRawJSON: { type: String },
   },
   { timestamps: true }
 );

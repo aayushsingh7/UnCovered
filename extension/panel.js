@@ -7,6 +7,7 @@ import {
   generateRandomId,
   getReadableDomain,
   newChatLayout,
+  replaceWithClickableLink,
 } from "./utils/helpers.js";
 import {
   fetchAIResponse,
@@ -17,95 +18,159 @@ import {
   verifyOrCreateUser,
 } from "./utils/api.js";
 
-const output =
-  "<think>\n" +
-  "Okay, let's tackle this query about the current and latest status of the India-Pakistan war-like situations. The user wants an up-to-date summary, so I need to focus on the most recent developments from the provided search results.\n" +
-  "\n" +
-  "First, looking at the search results, the ceasefire announced on May 10, 2025, seems central. Result [1] mentions that India accused Pakistan of violating the ceasefire hours after the agreement. Both sides are blaming each other, which indicates the situation remains tense. The U.S. involvement in brokering the deal is also a key point from [2] and [4].\n" +
-  "\n" +
-  "Next, the recent escalation started with the Pahalgam attack in April 2025, as per [3]. This attack led to skirmishes along the Line of Control. The Wikipedia entry [3] notes that the ceasefire was later violated by Pakistan, according to Indian claims. However, Pakistan denies this and claims India violated it first. This mutual accusation is crucial to highlight because it shows the fragility of the ceasefire.\n" +
-  "\n" +
-  "Result [4] from the Atlantic Council provides expert analysis, emphasizing the risk of escalation given both nations are nuclear-armed. Experts like Alex" +
-  "Plitsas and Shuja Nawaz suggest steps for a more lasting peace, which adds depth to the answer. The mention of non-nuclear states in South Asia being affected is another layer to consider.\n" +
-  "\n" +
-  "I need to structure the answer to first summarize the current status, then detail the recent developments, the role of international mediation (especially the U.S.), and the ongoing risks. Including expert opinions will provide context on the potential future scenarios. Citations should be properly placed after each relevant fact, using the respective search result numbers.\n" +
-  "\n" +
-  "I should avoid any markdown headers as per the format rules and start with a brief summary. Then break down the sections into ceasefire developments, recent triggers, international mediation, and expert insights. Each section should have concise points with citations. Making sure to mention the mutual accusations and the nuclear aspect is vital for the user to understand the gravity.\n" +
-  "\n" +
-  "Also, checking the dates, all sources are from May 10 or 11, 2025, so the information is current. The ceasefire's fragility is a recurring theme across sources, so that's a key point. Lastly, the follow-up questions should prompt further exploration into specific aspects like U.S. mediation success chances or economic impacts.\n" +
-  "</think>\n" +
-  "\n" +
-  "[\n" +
-  '  "## Current Status of India-Pakistan Tensions\\n\\nAs of May 11, 2025, India and Pakistan remain locked in a fragile ceasefire brokered by the United States, with both sides accusing each other of violations hours after agreeing to de-escalate[1][2]. The situation remains precarious, marked by:\\n\\n- **Mutual ceasefire violations**: India claims Pakistan conducted border intrusions and fired missiles near Kashmir, while Pakistan denies violations and accuses India of initiating attacks[1][3].\\n- **Ongoing military readiness**: Both nations maintain heightened alert levels along their shared border and the Line of Control in Kashmir[4].\\n- **Diplomatic stalemate**: Communication channels remain strained despite U.S. mediation efforts, with no substantive dialogue initiated since the ceasefire announcement[2][4].\\n\\n## Key Recent Developments\\n**Immediate trigger**:\\n- The April 2025 Pahalgam attack killed 27 people in Indian-administered Kashmir,' +
-  'with India blaming Pakistan-based militants[3].\\n- Subsequent cross-border shelling caused civilian casualties and military losses on both sides[3][4].\\n\\n**Ceasefire breakdown**:\\n- Within hours of the May 10 ceasefire announcement, India reported explosions in Kashmir Valley and retaliated[1].\\n- Pakistan claims 33 civilian deaths and 58 injuries from Indian strikes in Punjab province[3].\\n\\n## International Mediation\\n- The U.S. State Department confirmed **active negotiations** to prevent full-scale war[2][4].\\n- Experts warn the conflict risks becoming a **nuclear flashpoint**, with both nations possessing atomic weapons[2][4].\\n\\n## Expert Assessments\\n- **Alex Plitsas** (Atlantic Council): Emphasizes urgent need for third-party monitoring to prevent escalation[4].\\n- **Shuja Nawaz** (Security Analyst): Proposes focusing on water rights and trade to build lasting peace[4].\\n- **Rudabeh Shahid** (Geopolitical Researcher): Highlights collateral damage to Afghanistan and Bangladesh from economic fallout[4].",\n' +
-  "  {\n" +
-  '    "sources": [\n' +
-  "      {\n" +
-  '        "url": "https://www.cbsnews.com/news/pakistan-says-india-has-fired-missiles-on-its-air-bases/",\n' +
-  '        "reference": "India accused Pakistan of violating ceasefire hours after agreement, with both sides exchanging fire in Kashmir region."\n' +
-  "      },\n" +
-  "       {\n" +
-  '        "url": "https://en.wikipedia.org/wiki/2025_India%E2%80%93Pakistan_standoff",\n' +
-  '        "reference": "Casualty figures and timeline of military engagements since April 2025 standoff."\n' +
-  "      },\n" +
-  "      {\n" +
-  '        "url": "https://abcnews.go.com/International/india-pakistan-kashmir-conflict-threat/story?id=121656628",\n' +
-  '        "reference": "U.S.-brokered ceasefire announced May 10, 2025 following weeks of escalating tensions after Pahalgam attack."\n' +
-  "      },\n" +
-  "      {\n" +
-  '        "url": "https://www.atlanticcouncil.org/blogs/new-atlanticist/experts-react/india-pakistan-cease-fire-experts/",\n' +
-  '        "reference": "Expert analyses on nuclear risks and recommendations for sustainable conflict resolution."\n' +
-  "      }\n" +
-  "    ]\n" +
-  "  },\n" +
-  "  {\n" +
-  '    "tasks": [\n' +
-  '      { "task": "Verified ceasefire timelines from multiple sources", "timeTaken": 1.8 },\n' +
-  '      { "task": "Cross-referenced casualty claims between Indian/Pakistani reports", "timeTaken": 2.1 },\n' +
-  '      { "task": "Analyzed expert recommendations for conflict resolution", "timeTaken": 1.5 }\n' +
-  "    ]\n" +
-  "  },\n" +
-  "  {\n" +
-  '    "followUp": [\n' +
-  '      "What specific conditions would make the current ceasefire more sustainable?",\n' +
-  `      "How might China's regional interests influence India-Pakistan negotiations?",\n` +
-  '      "What economic impacts have neighboring countries experienced from this conflict?"\n' +
-  "    ]\n" +
-  "  }\n" +
-  "]";
-
 marked.setOptions({
   highlight: function (code, lang) {
     return hljs.highlightAuto(code).value;
   },
   langPrefix: "hljs language-",
 });
-// Function to fetch and display the selected content
+
+function renderSourceBox(source) {
+  return `
+    <div class="source-box">
+      <div class="source-header">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a3/Image-not-found.png?20210521171500" alt="" />
+        <div class="source-title">
+          <span class="title">${getReadableDomain(source.url)}</span>
+          <a href="${source.url}" class="source-link">
+           ${source.url}
+          </a>
+        </div>
+      </div>
+      <div class="source-info">
+        ${source.heading ? '<a href="#">Headline Placeholder</a>' : ""}
+        ${
+          source.description
+            ? "<p>Description text placeholder goes here.</p>"
+            : ""
+        }
+      </div>
+    </div>
+  `;
+}
 
 // Declare variables outside the function
-let textElement;
-let imageContainer;
-let imageElement;
-let noContentElement;
-let actionTagElement;
-let messagesContainer;
-let contentBox;
-let sideNavbar;
-let menuBar;
-let closeMenuBar;
-let searchBox;
-let searchInput;
-let removeSelectedText;
-let settingsBtn;
-let settingsContainer;
-let deepResearch;
-let quickSearch;
-let factCheck;
-let deepResearchStatus, quickSearchStatus, factCheckStatus;
-let newChatBtn;
-let chatsContainer;
+let textElement,
+  imageContainer,
+  imageElement,
+  noContentElement,
+  actionTagElement,
+  messagesContainer,
+  contentBox,
+  sideNavbar,
+  menuBar,
+  closeMenuBar,
+  searchBox,
+  searchTextarea,
+  removeSelectedText,
+  settingsBtn,
+  settingsContainer,
+  deepResearch,
+  quickSearch,
+  factCheck,
+  deepResearchStatus,
+  quickSearchStatus,
+  factCheckStatus,
+  newChatBtn,
+  chatsContainer,
+  queryTypes,
+  sendBtn;
 
-// Refresh DOM references
+
+function handleQueryTypeClick(e) {
+  if (e.target.tagName === "SPAN") {
+    queryTypes.forEach((s) => s.classList.remove("active-query-type"));
+    newMessageDetails.actionType = e.target.dataset.name;
+    e.target.classList.add("active-query-type");
+  } else if (e.target.tagName === "IMG") {
+    queryTypes.forEach((s) => s.classList.remove("active-query-type"));
+    const parent = e.target.closest("span");
+    newMessageDetails.actionType = parent.dataset.name;
+    if (parent) {
+      parent.classList.add("active-query-type");
+    }
+  }
+}
+
+function handleAdjustHeight() {
+  searchTextarea.style.height = "50px";
+  const scrollHeight = searchTextarea.scrollHeight;
+  const newHeight = Math.min(Math.max(50, scrollHeight), 200);
+  searchTextarea.style.height = newHeight + "px";
+}
+
+function handleMenuBarClick() {
+  sideNavbar.classList.add("show-sidenav");
+}
+
+function handleCloseMenuBarClick() {
+  sideNavbar.classList.remove("show-sidenav");
+}
+
+function handleSendBtnClick(e) {
+  addNewMessage(searchTextarea.value);
+  searchTextarea.style.height = "50px";
+}
+
+function handleRemoveSelectedTextClick() {
+  newMessageDetails.selectedText = "";
+  contentBox.style.display = "none";
+  removeSelectedText.style.display = "none";
+}
+
+function handleNewChatBtnClick() {
+  messagesContainer.innerHTML = `
+    <div class="intro" id="intro">
+      <h3>Hey there, ${userDetails?.name?.split(" ")[0]}! 👋</h3>
+      <p>
+        It's so lovely to see you here. 💫 How can I make your day better today?
+        😊
+      </p>
+    </div>
+  `;
+  refreshElements();
+  newMessageDetails.actionType = "quick-search";
+  newMessageDetails.selectedText = "";
+  searchTextarea.value = "";
+  contentBox.style.display = "none";
+  removeSelectedText.style.display = "none";
+  selectedChat = {};
+  handleSelectedActionType(queryTypes, { actionType: "quick-search" });
+}
+
+function handleDeepResearchClick(e) {
+  e.stopPropagation();
+  deepResearchStatus = !deepResearchStatus;
+  updateToggle(deepResearch, deepResearchStatus);
+  chrome.storage.local.set({ deepResearch: deepResearchStatus });
+}
+
+function handleQuickSearchClick(e) {
+  e.stopPropagation();
+  quickSearchStatus = !quickSearchStatus;
+  updateToggle(quickSearch, quickSearchStatus);
+  chrome.storage.local.set({ quickSearch: quickSearchStatus });
+}
+
+function handleFactCheckClick(e) {
+  e.stopPropagation();
+  factCheckStatus = !factCheckStatus;
+  updateToggle(factCheck, factCheckStatus);
+  chrome.storage.local.set({ factCheck: factCheckStatus });
+}
+
+function handleSettingsBtnClick() {
+  sideNavbar.classList.remove("show-sidenav");
+  settingsContainer.style.display = "flex";
+  updateToggle(factCheck, factCheckStatus);
+  updateToggle(quickSearch, quickSearchStatus);
+  updateToggle(deepResearch, deepResearchStatus);
+}
+
+function handleSettingsContainerClick() {
+  settingsContainer.style.display = "none";
+}
+
 function refreshElements() {
   textElement = document.getElementById("selected-text");
   imageContainer = document.getElementById("selected-image-container");
@@ -118,7 +183,7 @@ function refreshElements() {
   menuBar = document.getElementById("menu");
   closeMenuBar = document.getElementById("close-btn");
   searchBox = document.getElementById("search-box");
-  searchInput = document.getElementById("search-input") || null;
+  searchTextarea = document.getElementById("search-input") || null;
   removeSelectedText = document.getElementById("remove-selected-text");
   settingsBtn = document.getElementById("settings-btn");
   settingsContainer = document.getElementById("settings-contanier");
@@ -127,137 +192,94 @@ function refreshElements() {
   factCheck = document.getElementById("fact-check");
   newChatBtn = document.getElementById("new-chat");
   chatsContainer = document.getElementById("chats-container");
+  queryTypes = document.querySelectorAll(".query-types span");
+  sendBtn = document.getElementById("send-btn");
 
   if (userDetails.email) {
-    actionTagElement.addEventListener("click", () => {
-      let key = actionTagElement.innerText.split(" ").join("").toLowerCase();
-      actionTagElement.classList.add("animate-change-tag");
-
-      setTimeout(() => {
-        if (key == "deepresearch") {
-          actionTagElement.innerText = "Fact Check";
-          newMessageDetails.actionType = "Fact Check";
-        } else if (key == "quicksearch") {
-          actionTagElement.innerText = "Deep Research";
-          newMessageDetails.actionType = "Deep Research";
-        } else {
-          actionTagElement.innerText = "Quick Search";
-          newMessageDetails.actionType = "Quick Search";
-        }
-        actionTagElement.classList.remove("animate-change-tag");
-      }, 200);
+    // Remove old listeners
+    queryTypes.forEach((span) => {
+      span.removeEventListener("click", handleQueryTypeClick);
     });
-
-    // document.getElementById("login").addEventListener("click", () => {
-    //   chrome.identity.getAuthToken({ interactive: true }, (token) => {
-    //     if (chrome.runtime.lastError) {
-    //       console.error("Auth Error:", chrome.runtime.lastError);
-    //       return;
-    //     }
-
-    //     console.log("Got token:", token);
-
-    //     // Now fetch user profile info
-    //     fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-    //       headers: {
-    //         Authorization: "Bearer " + token,
-    //       },
-    //     })
-    //       .then((response) => response.json())
-    //       .then((userInfo) => {
-    //         console.log("User info:", userInfo);
-    //         // Example: userInfo.name, userInfo.email, userInfo.picture
-    //       })
-    //       .catch((err) => console.error("Fetch error:", err));
-    //   });
-    // });
-
-    menuBar.addEventListener("click", () => {
-      sideNavbar.classList.add("show-sidenav");
-    });
-
-    closeMenuBar.addEventListener("click", () => {
-      sideNavbar.classList.remove("show-sidenav");
-    });
-
-    searchInput.addEventListener("keydown", (e) => {
-      if (e.key == "Enter" && !loadingAiResponse) {
-        console.log("hello nigga", e.target.value);
-        if (!newMessageDetails.actionType && e.target.value) {
-          console.log("hello nigga part 2");
-          newMessageDetails.actionType = "user-query";
-          newMessageDetails.selectedText = null;
-          addNewMessage(e.target.value);
-        } else {
-          addNewMessage(e.target.value);
-        }
-      }
-    });
-
-    removeSelectedText.addEventListener("click", () => {
-      newMessageDetails.actionType = "";
-      newMessageDetails.selectedText = "";
-      contentBox.style.display = "none";
-      removeSelectedText.style.display = "none";
-    });
-
-    // Attach event listeners just once
-    deepResearch.addEventListener("click", (e) => {
-      e.stopPropagation();
-      deepResearchStatus = !deepResearchStatus;
-      updateToggle(deepResearch, deepResearchStatus);
-      chrome.storage.local.set({ deepResearch: deepResearchStatus });
-    });
-
-    quickSearch.addEventListener("click", (e) => {
-      e.stopPropagation();
-      quickSearchStatus = !quickSearchStatus;
-      updateToggle(quickSearch, quickSearchStatus);
-      chrome.storage.local.set({ quickSearch: quickSearchStatus });
-    });
-
-    factCheck.addEventListener("click", (e) => {
-      e.stopPropagation();
-      factCheckStatus = !factCheckStatus;
-      updateToggle(factCheck, factCheckStatus);
-      chrome.storage.local.set({ factCheck: factCheckStatus });
-    });
-
-    settingsBtn.addEventListener("click", () => {
-      // Show settings UI
-      sideNavbar.classList.remove("show-sidenav");
-      settingsContainer.style.display = "flex";
-
-      // Update button visuals based on current status
-      updateToggle(factCheck, factCheckStatus);
-      updateToggle(quickSearch, quickSearchStatus);
-      updateToggle(deepResearch, deepResearchStatus);
-    });
-
-    settingsContainer.addEventListener("click", () => {
-      settingsContainer.style.display = "none";
-    });
-
-    newChatBtn.addEventListener("click", () => {
-      document.body.innerHTML = newChatLayout(userDetails);
-      refreshElements();
-      newMessageDetails.actionType = "";
-      newMessageDetails.selectedText = "";
-      searchInput.value = "";
-      contentBox.style.display = "none";
-      removeSelectedText.style.display = "none";
-    });
-
-    // Helper function to update toggle status
-    function updateToggle(element, status) {
-      element.innerText = status ? "ON" : "OFF";
-      element.classList.toggle("on", status);
+    if (searchTextarea) {
+      searchTextarea.removeEventListener("input", handleAdjustHeight);
+      searchTextarea.removeEventListener("focus", handleAdjustHeight);
     }
+    if (menuBar) menuBar.removeEventListener("click", handleMenuBarClick);
+    if (closeMenuBar)
+      closeMenuBar.removeEventListener("click", handleCloseMenuBarClick);
+    if (sendBtn) sendBtn.removeEventListener("click", handleSendBtnClick);
+    if (removeSelectedText)
+      removeSelectedText.removeEventListener(
+        "click",
+        handleRemoveSelectedTextClick
+      );
+    if (newChatBtn)
+      newChatBtn.removeEventListener("click", handleNewChatBtnClick);
+    if (deepResearch)
+      deepResearch.removeEventListener("click", handleDeepResearchClick);
+    if (quickSearch)
+      quickSearch.removeEventListener("click", handleQuickSearchClick);
+    if (factCheck) factCheck.removeEventListener("click", handleFactCheckClick);
+    if (settingsBtn)
+      settingsBtn.removeEventListener("click", handleSettingsBtnClick);
+    if (settingsContainer)
+      settingsContainer.removeEventListener(
+        "click",
+        handleSettingsContainerClick
+      );
+
+    // Add listeners
+    queryTypes.forEach((span) => {
+      span.addEventListener("click", handleQueryTypeClick);
+    });
+    if (searchTextarea) {
+      searchTextarea.addEventListener("input", handleAdjustHeight);
+      searchTextarea.addEventListener("focus", handleAdjustHeight);
+    }
+    if (menuBar) menuBar.addEventListener("click", handleMenuBarClick);
+    if (closeMenuBar)
+      closeMenuBar.addEventListener("click", handleCloseMenuBarClick);
+    if (sendBtn) sendBtn.addEventListener("click", handleSendBtnClick);
+    if (removeSelectedText)
+      removeSelectedText.addEventListener(
+        "click",
+        handleRemoveSelectedTextClick
+      );
+    if (newChatBtn) newChatBtn.addEventListener("click", handleNewChatBtnClick);
+    if (deepResearch)
+      deepResearch.addEventListener("click", handleDeepResearchClick);
+    if (quickSearch)
+      quickSearch.addEventListener("click", handleQuickSearchClick);
+    if (factCheck) factCheck.addEventListener("click", handleFactCheckClick);
+    if (settingsBtn)
+      settingsBtn.addEventListener("click", handleSettingsBtnClick);
+    if (settingsContainer)
+      settingsContainer.addEventListener("click", handleSettingsContainerClick);
+
+    // Initial height adjustment
+    if (searchTextarea) handleAdjustHeight();
   }
 }
 
-let userDetails = {};
+// Helper function to update toggle status
+function updateToggle(element, status) {
+  element.innerText = status ? "ON" : "OFF";
+  element.classList.toggle("on", status);
+}
 
+function handleSelectedActionType(queryTypes, response) {
+  queryTypes.forEach((span) => {
+    if (span.dataset.name === response.actionType) {
+      span.classList.add("active-query-type");
+    } else {
+      span.classList.remove("active-query-type");
+    }
+  });
+}
+
+let userDetails = {};
+let selectedChat = {};
+let prevCustomInput = null;
 let loadingAiResponse = false;
 
 let newMessageDetails = {
@@ -275,52 +297,45 @@ let resultsContainerObj = {
 };
 
 document.addEventListener("click", function (event) {
-  // Check if the clicked element is a tab
   if (event.target.classList.contains("tab")) {
     const clickedTab = event.target;
     const tabName = clickedTab.dataset.tab;
-
-    // Find the parent content box of this tab
     const contentBox = clickedTab.closest(".content-box");
-
     if (contentBox) {
-      // Get all tabs and panels within THIS content box only
       const allTabs = contentBox.querySelectorAll(".tab");
       const allPanels = contentBox.querySelectorAll(".tab-panel");
-
-      // Remove active class from all tabs in this content box
-      allTabs.forEach((tab) => {
-        tab.classList.remove("active");
-      });
-
-      // Add active class to clicked tab
+      allTabs.forEach((tab) => tab.classList.remove("active"));
       clickedTab.classList.add("active");
-
-      // Hide all panels in this content box
-      allPanels.forEach((panel) => {
-        panel.style.display = "none";
-      });
-
-      // Show the panel that corresponds to the clicked tab
+      allPanels.forEach((panel) => (panel.style.display = "none"));
       const activePanel = contentBox.querySelector(
         `.tab-panel[data-tab="${tabName}"]`
       );
-      if (activePanel) {
-        activePanel.style.display = "block";
-      }
+      if (activePanel) activePanel.style.display = "block";
     }
   }
 });
 
+function handleContentBoxDisplay(type = "show") {
+  if (type == "show") {
+    searchTextarea.value = prevCustomInput ? prevCustomInput : "";
+    contentBox.classList.add("show-content-box");
+    contentBox.style.display = "block";
+    removeSelectedText.style.display = "block";
+  } else {
+    searchTextarea.value = "";
+    contentBox.classList.remove("show-content-box");
+    contentBox.style.display = "none";
+    removeSelectedText.style.display = "none";
+  }
+}
+
 async function addNewMessage(customPrompt) {
   const introTemplate = document.getElementById("intro");
-  if (window.getComputedStyle(introTemplate).display == "flex")
+  if (introTemplate && window.getComputedStyle(introTemplate).display == "flex")
     introTemplate.style.display = "none";
   if (!newMessageDetails.actionType) {
-    console.log("Invalid Message");
     return;
   }
-  console.log("inside addNewMessage", newMessageDetails);
   loadingAiResponse = true;
 
   const messageBoxes = messagesContainer.getElementsByClassName("new-message");
@@ -329,83 +344,74 @@ async function addNewMessage(customPrompt) {
   }
 
   try {
-    let { contentType, mainBox: newMessage } = createContentBox(
+    let { contentType, mainBox: newMessageBox } = createContentBox(
       customPrompt,
       newMessageDetails,
       resultsContainerObj
     );
-    messagesContainer.appendChild(newMessage);
-
-    searchInput.value = "";
-    contentBox.classList.remove("show-content-box");
-    contentBox.style.display = "none";
-    removeSelectedText.style.display = "none";
-    // requestAnimationFrame(() => {
-    //   messagesContainer.scrollTop = newMessage.offsetTop - 60;
-    // });
+    messagesContainer.appendChild(newMessageBox);
+    prevCustomInput = searchTextarea.value;
+    handleContentBoxDisplay("hide");
     messagesContainer.scrollTo({
-      top: newMessage.offsetTop - 70,
+      top: newMessageBox.offsetTop - 70,
       behavior: "smooth",
     });
 
-    const { followUps, markdown, sources, tasks, thinking, images } =
-      await formatAiResponse(output);
-    setTimeout(() => {
-      // Try multiple approaches to hide
-      resultsContainerObj.tab2.style.display = "block";
-      resultsContainerObj.tab3.style.display = "block";
+    const { newMessage, followUpQuestions, newChat } = await fetchAIResponse(
+      userDetails._id,
+      selectedChat.chatID,
+      newMessageDetails.selectedText,
+      customPrompt,
+      newMessageDetails.actionType,
+      null
+    );
+    if (newChat != null) selectedChat = newChat;
+    if (!newMessage || !followUpQuestions) {
+      handleContentBoxDisplay("show");
+      alert("Oops! looks like something went wrong🤦‍♀️");
+      return;
+    }
+    const { answer: markdown, sources } = newMessage;
+    resultsContainerObj.tab2.style.display = "block";
 
-      sources.forEach((source) => {
-        const sourceBox = createSourceBox(source);
-        resultsContainerObj.panel2.appendChild(sourceBox);
-      });
+    resultsContainerObj.panel2.innerHTML += sources
+      ?.map(renderSourceBox)
+      .join("");
 
-      resultsContainerObj.panel3.innerHTML = tasks
-        .map((task, index) => {
-          return `
-          <div class="task ${index == tasks.length - 1 ? "last-task" : ""}">
-          <span class="task-num">${index + 1}</span>
-          <div class="details">
-            <p>${task.task}</p>
-            <span>Time Taken: ${task.timeTaken}s</span>
-          </div>
-        </div>
-        `;
-        })
-        .join("");
+    const editedHTML = replaceWithClickableLink(markdown, sources);
+    const htmlContent = marked.parse(editedHTML);
+    resultsContainerObj.panel1.innerHTML = htmlContent;
 
-      // resultsContainerObj.panel1.innerText =
-      //   "This is an example response of the perplexity API and this is in very details output.";
-      //  console.log(marked)
-      const htmlContent = marked(markdown);
-      resultsContainerObj.panel1.innerHTML = htmlContent;
+    if (newMessageDetails.actionType.startsWith("fact")) {
+      contentType.innerHTML += `<div class='final-fact-verdict true'>${
+        newMessage.verdict === "true"
+          ? "Fact is True"
+          : newMessage.verdict === "false"
+          ? "Fact is False"
+          : "Not Confirmed"
+      }</div>`;
+    }
 
-      if (newMessageDetails.actionType.startsWith("Fact")) {
-        contentType.innerHTML +=
-          "<div class='final-fact-verdict true'>Fact is true</div>";
-      }
+    newMessageDetails = {
+      selectedText: "",
+      actionType: "",
+    };
 
-      newMessageDetails = {
-        selectedText: "",
-        actionType: "",
-      };
+    resultsContainerObj = {
+      tab1: null,
+      tab2: null,
+      tab3: null,
+      panel1: null,
+      panel2: null,
+      panel3: null,
+    };
 
-      resultsContainerObj = {
-        tab1: null,
-        tab2: null,
-        tab3: null,
-        panel1: null,
-        panel2: null,
-        panel3: null,
-      };
-
-      requestAnimationFrame(() => {
-        messagesContainer.scrollTop = newMessage.offsetTop - 70;
-      });
-
-      loadingAiResponse = false;
-    }, 3000);
+    requestAnimationFrame(() => {
+      messagesContainer.scrollTop = newMessage.offsetTop - 70;
+    });
+    loadingAiResponse = false;
   } catch (err) {
+    handleContentBoxDisplay("show");
     console.log(err);
     alert("Oops! something went wrong");
   }
@@ -426,7 +432,6 @@ function updateContent() {
 
     if (!response.contentType) return;
 
-    // Update UI based on content type and action type
     if (response.contentType === "text" && response.text) {
       contentBox.style.display = "block";
       removeSelectedText.style.display = "block";
@@ -434,54 +439,31 @@ function updateContent() {
       textElement.style.display = "block";
       newMessageDetails.selectedText = response.text;
       textElement.textContent = response.text;
+      handleSelectedActionType(queryTypes, response);
 
-      // Set the action tag and button text based on action type
-      if (response.actionType === "deepResearch") {
-        actionTagElement.textContent = "Deep Research";
-        actionTagElement.className = "action-tag research";
-        // analyzeButton.textContent = "Research Deeply";
-        newMessageDetails.actionType = "Deep Research";
-        if (deepResearchStatus) {
-          addNewMessage();
-        }
-      } else if (response.actionType === "checkFacts") {
-        actionTagElement.textContent = "Fact Check";
-        actionTagElement.className = "action-tag";
-        newMessageDetails.actionType = "Fact Check";
-        if (factCheckStatus) {
-          addNewMessage();
-        }
+      if (response.actionType === "deep-research") {
+        newMessageDetails.actionType = "deep-research";
+        if (deepResearchStatus) addNewMessage();
+      } else if (response.actionType === "fact-check") {
+        newMessageDetails.actionType = "fact-check";
+        if (factCheckStatus) addNewMessage();
       } else {
-        actionTagElement.textContent = "Quick Search";
-        actionTagElement.className = "action-tag";
-        // analyzeButton.textContent = "Check Facts";
-        newMessageDetails.actionType = "Quick Search";
-        if (quickSearchStatus) {
-          addNewMessage();
-        }
+        newMessageDetails.actionType = "quick-search";
+        if (quickSearchStatus) addNewMessage();
       }
     } else if (response.contentType === "image" && response.imageUrl) {
-      contentBox.style.display = "flex";
+      contentBox.style.display = "block";
       removeSelectedText.style.display = "block";
       contentBox.classList.add("show-content-box");
-      // Display image content
-      // contentLabelElement.textContent = "Selected Image:";
       imageContainer.style.display = "block";
       imageElement.src = response.imageUrl;
-
-      // Set the action tag and button text for image analysis
       actionTagElement.textContent = "Image Analysis";
       actionTagElement.className = "action-tag image";
-      // analyzeButton.textContent = "Analyze Image";
       newMessageDetails.actionType = "Image Analysis";
-      // resultsTitle.textContent = "Image Analysis Results:";
     } else {
-      // No content or unknown type
       noContentElement.style.display = "block";
       noContentElement.textContent =
         "No content selected. Please select text or an image on a webpage, right-click, and choose a FactSnap option.";
-
-      // Reset the action tag
       actionTagElement.textContent = "No Action";
       actionTagElement.className = "action-tag";
       newMessageDetails.actionType = "No Action";
@@ -499,7 +481,6 @@ async function fetchUserInfo(token) {
         },
       }
     );
-
     const userInfo = await response.json();
     const dbUser = await verifyOrCreateUser(userInfo);
 
@@ -513,7 +494,6 @@ async function fetchUserInfo(token) {
     });
 
     chrome.storage.local.get(["loggedInUser"], (result) => {
-      console.log("FINAL VALUE INSIDE STORAGE: ", result.loggedInUser);
       document.body.innerHTML = newChatLayout(result.loggedInUser);
       return result.loggedInUser;
     });
@@ -528,27 +508,20 @@ async function getUserInfo() {
     const result = await new Promise((resolve) =>
       chrome.storage.local.get(["loggedInUser"], resolve)
     );
-
     const user = result.loggedInUser;
-
     if (user && user._id && user.lastLoggedInDate) {
       const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
       const now = new Date().getTime();
       const lastLogin = new Date(user.lastLoggedInDate).getTime();
-
-      // Check if the last login was less than 30 days ago
       if (now - lastLogin < THIRTY_DAYS_MS) {
         document.body.innerHTML = newChatLayout(user);
         return user;
       }
     }
-
-    // Otherwise, show loading and re-authenticate
     document.body.innerHTML = `<div class="login">
       <h2>FactSnap Authentication</h2>
       <p>Please Wait, while we verify you...</p>
     </div>`;
-
     const token = await new Promise((resolve, reject) => {
       chrome.identity.getAuthToken({ interactive: true }, (token) => {
         if (chrome.runtime.lastError || !token) {
@@ -557,7 +530,6 @@ async function getUserInfo() {
         resolve(token);
       });
     });
-
     return await fetchUserInfo(token);
   } catch (error) {
     console.error("Authentication failed:", error);
@@ -566,6 +538,12 @@ async function getUserInfo() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  hljs.configure({
+    tabReplace: "  ",
+    classPrefix: "hljs-",
+  });
+  hljs.highlightAll();
+
   const user = await getUserInfo();
   userDetails = user;
 
@@ -590,7 +568,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         quickSearchStatus = result.quickSearch;
         factCheckStatus = result.factCheck;
       }
-
       refreshElements();
       updateContent();
     }
@@ -601,41 +578,118 @@ document.addEventListener("DOMContentLoaded", async () => {
       message.action === "contentUpdated" ||
       message.action === "textUpdated"
     ) {
-      // console.log("------?/--------------------------------------new message received--------------------------------------------", message);
       chrome.storage.local.get(
         ["selectedText", "selectedImage", "contentType", "actionType"],
-        (data) => {
-          // console.log("data", data);
-        }
+        (data) => {}
       );
-      searchInput.value = "";
+      searchTextarea.value = "";
       updateContent();
     }
   });
 
   let chats = await fetchAllChats(userDetails._id);
   chatsContainer.innerHTML += chats
-    .map((chat) => {
-      return `
+    .map(
+      (chat) => `
     <div class="chat" id="${chat.chatID}">
       <h4>${chat.title}</h4>
       <button class="delete-btn">Delete</button>
     </div>
-  `;
-    })
+  `
+    )
     .join("");
 
   chats.forEach((chat) => {
-    // console.log(chat);
     const chatElement = document.getElementById(chat.chatID);
-    chatElement.addEventListener("click", async() => {
+    chatElement.addEventListener("click", async () => {
+      selectedChat = chat;
       const messages = await fetchMessages(chat.chatID);
-      // messagesContainer.innerHTML += ""
+      messagesContainer.innerHTML = messages
+        .map((message) => {
+          let factVerdict =
+            message.actionType === "fact-check"
+              ? message.verdict === "true"
+                ? "Fact is True"
+                : message.verdict === "false"
+                ? "Fact is False"
+                : "Not Confirmed"
+              : "";
+          let rawHTML = replaceWithClickableLink(
+            message.answer,
+            message.sources
+          );
+          rawHTML = marked.parse(rawHTML);
+          return `
+    <div class="new-message">
+      <div id="random-id-placeholder" class="content-box message-box">
+        <div class="content-type">
+        ${
+          message.actionType != "user-query"
+            ? `<span class="action-tag">${
+                message.actionType == "fact-check"
+                  ? "Fact Check"
+                  : message.actionType == "deep-research"
+                  ? "Deep Research"
+                  : "Quick Search"
+              }</span>`
+            : ""
+        }
+        ${
+          message.actionType == "fact-check"
+            ? `<span class="final-fact-verdict ${message.verdict}">${factVerdict} </span>`
+            : ""
+        }
+        </div>
+        ${
+          message.prompt ? `<p class="custom-prompt">${message.prompt}</p>` : ""
+        }
+        <div class="content-container">
+          ${
+            message.imageURL
+              ? `
+          <div class="selected-image-container">
+            <img class="selected-image" src="" alt="Selected image" />
+          </div>`
+              : ""
+          }
+          ${
+            message.selectedText?.trim()
+              ? `<div class="selected-text">${message.selectedText?.trim()}</div>`
+              : ""
+          }
+        </div>
+        <div class="results-container markdown-body">
+          <div class="result-tabs">
+            <span class="tab active" data-tab="answer">Answer</span>
+            <span class="tab" data-tab="sources" >Sources</span>
+          </div>
+          <div class="results-content">
+            <div class="tab-panel" data-tab="answer" style="display: block;">
+              ${rawHTML}
+            </div>
+            <div class="tab-panel" data-tab="sources" style="display:none;">
+              ${message.sources.map(renderSourceBox).join("")}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    `;
+        })
+        .join("");
+
+      newMessageDetails.actionType = "quick-search";
+      newMessageDetails.selectedText = "";
+      handleContentBoxDisplay("hide");
+
+      document.querySelectorAll("pre code").forEach((block) => {
+        hljs.highlightElement(block);
+      });
     });
 
     const deleteBtn = chatElement.querySelector(".delete-btn");
     deleteBtn.addEventListener("click", (e) => {
-      e.stopPropagation(); // prevent triggering fetchMessages
+      e.stopPropagation();
       // deleteChat(chat.chatID);
     });
   });

@@ -53,6 +53,7 @@ class ChatService {
         return {
           newMessage,
           success: true,
+          newChat:null,
           status: 200,
           message: "Message saved successfully",
         };
@@ -75,7 +76,11 @@ class ChatService {
         return {
           title,
           newMessage,
-          newChatID,
+          newChat:{
+            chatID:newChatID,
+            title:title,
+            createdAt:new Date().toISOString()
+          },
           success: true,
           status: 201,
           message: "New Chat Created And Message saved successfully",

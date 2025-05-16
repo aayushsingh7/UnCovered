@@ -51,11 +51,11 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     // Determine the action type based on which menu item was clicked
     let actionType;
     if (info.menuItemId === "factSnapTextCheckFacts") {
-      actionType = "checkFacts";
+      actionType = "fact-check";
     } else if (info.menuItemId === "factSnapTextQuickSearch") {
-      actionType = "quickSearch";
+      actionType = "quick-search";
     } else if (info.menuItemId === "factSnapTextDeepResearch") {
-      actionType = "deepResearch";
+      actionType = "deep-research";
     }
 
     console.log("background.js", info.menuItemId, actionType);
@@ -121,7 +121,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({
           text: data.selectedText || "No text selected",
           contentType: data.contentType || "text",
-          actionType: data.actionType || "quickSearch",
+          actionType: data.actionType || "quick-search",
         });
       }
     );
@@ -153,7 +153,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           text: data.selectedText || null,
           imageUrl: data.selectedImage || null,
           contentType: data.contentType || "text",
-          actionType: data.actionType || "quickSearch",
+          actionType: data.actionType || "quick-search",
         });
       }
     );
