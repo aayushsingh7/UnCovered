@@ -52,7 +52,8 @@ export async function fetchAIResponse(
   selectedText,
   prompt,
   actionType,
-  imageURL
+  imageURL,
+  CHAT_HISTORY
 ) {
   try {
     const response = await fetch(`http://localhost:4000/api/v1/ai/generate`, {
@@ -66,6 +67,7 @@ export async function fetchAIResponse(
         selectedText,
         actionType,
         imageURL,
+        CHAT_HISTORY
       }),
     });
     let data = await response.json();

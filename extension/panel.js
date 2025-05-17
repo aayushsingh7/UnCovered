@@ -18,6 +18,54 @@ import {
   verifyOrCreateUser,
 } from "./utils/api.js";
 
+// Declare variables outside the function
+let textElement,
+  imageContainer,
+  imageElement,
+  noContentElement,
+  actionTagElement,
+  messagesContainer,
+  contentBox,
+  sideNavbar,
+  menuBar,
+  closeMenuBar,
+  searchBox,
+  searchTextarea,
+  removeSelectedText,
+  settingsBtn,
+  settingsContainer,
+  deepResearch,
+  quickSearch,
+  factCheck,
+  deepResearchStatus,
+  quickSearchStatus,
+  factCheckStatus,
+  newChatBtn,
+  chatsContainer,
+  queryTypes,
+  sendBtn;
+
+let userDetails = {};
+let selectedChat = {};
+let prevCustomInput = null;
+let loadingAiResponse = false;
+
+let newMessageDetails = {
+  selectedText: "",
+  actionType: "",
+};
+
+let resultsContainerObj = {
+  tab1: null,
+  tab2: null,
+  tab3: null,
+  panel1: null,
+  panel2: null,
+  panel3: null,
+};
+
+let CHAT_HISTORY = [];
+
 marked.setOptions({
   highlight: function (code, lang) {
     return hljs.highlightAuto(code).value;
@@ -48,34 +96,6 @@ function renderSourceBox(source) {
     </div>
   `;
 }
-
-// Declare variables outside the function
-let textElement,
-  imageContainer,
-  imageElement,
-  noContentElement,
-  actionTagElement,
-  messagesContainer,
-  contentBox,
-  sideNavbar,
-  menuBar,
-  closeMenuBar,
-  searchBox,
-  searchTextarea,
-  removeSelectedText,
-  settingsBtn,
-  settingsContainer,
-  deepResearch,
-  quickSearch,
-  factCheck,
-  deepResearchStatus,
-  quickSearchStatus,
-  factCheckStatus,
-  newChatBtn,
-  chatsContainer,
-  queryTypes,
-  sendBtn;
-
 
 function handleQueryTypeClick(e) {
   if (e.target.tagName === "SPAN") {
@@ -261,7 +281,6 @@ function refreshElements() {
   }
 }
 
-// Helper function to update toggle status
 function updateToggle(element, status) {
   element.innerText = status ? "ON" : "OFF";
   element.classList.toggle("on", status);
@@ -276,25 +295,6 @@ function handleSelectedActionType(queryTypes, response) {
     }
   });
 }
-
-let userDetails = {};
-let selectedChat = {};
-let prevCustomInput = null;
-let loadingAiResponse = false;
-
-let newMessageDetails = {
-  selectedText: "",
-  actionType: "",
-};
-
-let resultsContainerObj = {
-  tab1: null,
-  tab2: null,
-  tab3: null,
-  panel1: null,
-  panel2: null,
-  panel3: null,
-};
 
 document.addEventListener("click", function (event) {
   if (event.target.classList.contains("tab")) {
@@ -330,6 +330,9 @@ function handleContentBoxDisplay(type = "show") {
 }
 
 async function addNewMessage(customPrompt) {
+  if (CHAT_HISTORY.length > 5) {
+    CHAT_HISTORY = CHAT_HISTORY.slice(2);
+  }
   const introTemplate = document.getElementById("intro");
   if (introTemplate && window.getComputedStyle(introTemplate).display == "flex")
     introTemplate.style.display = "none";
@@ -357,13 +360,32 @@ async function addNewMessage(customPrompt) {
       behavior: "smooth",
     });
 
+    const USER_MESSAGE = {
+      role: "user",
+      content: `
+Query Type: ${newMessageDetails.actionType}
+User Prompt: ${
+        customPrompt?.trim()
+          ? customPrompt
+          : newMessageDetails.actionType.startsWith("fact-check")
+          ? "Please verify the accuracy of this claim. Start with a short conclusion, then present supporting evidence and counterpoints."
+          : newMessageDetails.actionType.startsWith("deep-research")
+          ? "Please provide a comprehensive analysis of this topic. Start with a short summary, followed by structured insights."
+          : "Please provide a clear and concise answer to the question. Give comprehensive details if required"
+      }
+Context: ${newMessageDetails.selectedText || "No additional context provided."}
+`,
+    };
+    CHAT_HISTORY.push(USER_MESSAGE);
+
     const { newMessage, followUpQuestions, newChat } = await fetchAIResponse(
       userDetails._id,
       selectedChat.chatID,
       newMessageDetails.selectedText,
       customPrompt,
       newMessageDetails.actionType,
-      null
+      null,
+      CHAT_HISTORY
     );
     if (newChat != null) selectedChat = newChat;
     if (!newMessage || !followUpQuestions) {
@@ -371,9 +393,16 @@ async function addNewMessage(customPrompt) {
       alert("Oops! looks like something went wrong🤦‍♀️");
       return;
     }
+
     const { answer: markdown, sources } = newMessage;
     resultsContainerObj.tab2.style.display = "block";
-
+    const ASSISTANT_MESSAGE = {
+      role: "assistant",
+      content: `
+Answer: ${markdown}
+Sources: ${sources}`,
+    };
+    CHAT_HISTORY.push(ASSISTANT_MESSAGE);
     resultsContainerObj.panel2.innerHTML += sources
       ?.map(renderSourceBox)
       .join("");
