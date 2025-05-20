@@ -5,128 +5,175 @@ import ChatService from "./chatService";
 import dotenv from "dotenv";
 dotenv.config();
 
-const SYSTEM_PROMPT = `You are a precise, structured, and intelligent assistant. Always return answers in a strict JSON object format with exactly these 5 fields in this order: shortAnswer, detailedAnswer, followUpQuestions, verdict, and title. Do not include a sources field. Do not use code blocks, markdown wrappers, or any extra text.\n\n📦 Output Format:\n{\n  "shortAnswer": "## Short Answer\\nYour answer here",\n  "detailedAnswer": "## Detailed Answer\\nDetailed analysis using tables, bullet points, etc.",\n  "followUpQuestions": [\n    "Follow-up question 1?",\n    "Follow-up question 2?",\n    "Follow-up question 3?"\n  ],\n  "verdict": "not-confirmed | true | false",\n  "title": "Descriptive, concise title"\n}\n\n---\n\n📝 Final Answer Rules:\n\n- shortAnswer and detailedAnswer must always follow the instructions for the given queryType:\n  - deep-research: shortAnswer is a brief summary (1–2 sentences), detailedAnswer is a full, structured analysis with sections and headings.\n  - fact-check: shortAnswer is a short conclusive summary (e.g., "This claim is mostly false."), detailedAnswer includes evidence, breakdown, counterpoints, and limitations.\n  - quick-search: shortAnswer is a concise factual answer (1–3 sentences), use can give very detailed detailedAnswer if needed.\n\n- followUpQuestions should be 2–4 relevant, thoughtful questions.\n- verdict should be a concise status (e.g., "true","false", "not-confirmed",).\n- title should be a clear, descriptive headline.\n\nRemember: For **general, emotional, or social queries** (e.g., "how are you?", "I'm feeling down", "tell me a joke"):\n  - Responds **normally and empathetically**\n  - **No JSON output or formatting** required`
+const SYSTEM_PROMPT = `**ALAWAYS RETURN RESPONSE IN MARKDOWN FORMAT USING HEADINGS, BULLET POINTS, TABLES, HIGHLIGHTING, ETC**.
+
+## Final Answer Rules:
+
+- Start with a {verdict: "true" | "false" | "not-confirmed"} based on your analysis.
+
+- ## Short Answer and ## Detailed Answer must always follow the instructions for the given queryType:
+  - deep-research: shortAnswer is a brief summary (1–2 sentences), detailedAnswer is a full, structured analysis with sections and headings.
+  - fact-check: shortAnswer is a short conclusive summary (e.g., "This claim is mostly false."), detailedAnswer includes evidence, breakdown, counterpoints, and limitations.
+  - quick-search: shortAnswer is a concise factual answer (1–3 sentences), use can give very detailed detailedAnswer if needed.
+
+Remember: For **general, emotional, or social queries** (e.g., "how are you?", "I'm feeling down", "tell me a joke"):
+  - Responds **normally and empathetically**
+  - **No JSON output or formatting** required
+
+## IMPORTANT: ALWAYS FOLLOW THE ABOVE FORMAT NO MATTER WHAT.
+`;
 
 class AIService {
   private chatService: any;
+  private model: any;
+
   constructor() {
     this.chatService = new ChatService();
   }
-  public async generateResposne(
+
+  public async *askPerplexity(
     userID: string,
     chatID: string,
     selectedText: string,
     prompt: string,
     actionType: string,
-    imageURL: string,
-    CHAT_HISTORY:any[],
+    CHAT_HISTORY: any[]
   ) {
+    let response: Response | null = null;
+    let accumulatedContent: string = "";
+
     try {
-      const response = await fetch(
-        "https://api.perplexity.ai/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model:
-              actionType == "deep-research"
-                ? "sonar-deep-research"
-                : "sonar-reasoning",
-            messages: [
-              {
-                role: "system",
-                content:SYSTEM_PROMPT
-              },
-              ...CHAT_HISTORY
-            ],
-            response_format: {
-              type: "json_schema",
-              json_schema: {
-                schema: {
-                  type: "object",
-                  properties: {
-                    shortAnswer: { type: "string" },
-                    detailedAnswer: { type: "string" },
-                    followUpQuestions: {
-                      type: "array",
-                      items: { type: "string" },
-                    },
-                    verdict: {
-                      type: "string",
-                      enum: ["true", "false", "not-confirmed"],
-                    },
-                    title: { type: "string" },
-                  },
-                  required: [
-                    "shortAnswer",
-                    "detailedAnswer",
-                    "followUpQuestions",
-                    "verdict",
-                    "title",
-                  ],
-                },
-              },
+      response = await fetch("https://api.perplexity.ai/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model:
+            actionType === "deep-research"
+              ? "sonar-deep-research"
+              : "sonar-pro",
+          messages: [
+            {
+              role: "system",
+              content: SYSTEM_PROMPT,
             },
-          }),
+            ...CHAT_HISTORY,
+          ],
+          stream: true,
+          temperature: 0.7,
+          max_tokens: 4096, // Ensure sufficient tokens for complete responses
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Perplexity API error: ${response.status} - ${errorText}`
+        );
+      }
+
+      if (!response.body) {
+        throw new Error("Response body is null");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let citationsSent = false;
+
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+
+          // if (done) {
+          //   // Process any remaining data in buffer
+          //   if (buffer.trim()) {
+          //     const lines = buffer.split("\n").filter(line => line.trim().startsWith("data: "));
+          //     for (const line of lines) {
+          //       const jsonString = line.replace("data: ", "").trim();
+          //       if (jsonString && jsonString !== "[DONE]") {
+          //         try {
+          //           const data = JSON.parse(jsonString);
+          //           const content = data?.choices?.[0]?.delta?.content || data?.choices?.[0]?.message?.content;
+          //           if (content) {
+          //             yield `data: ${JSON.stringify({
+          //               choices: [{ delta: { content: content } }],
+          //             })}\n\n`;
+          //           }
+          //         } catch (err) {
+          //           console.warn("Failed to parse final buffer chunk:", jsonString);
+          //         }
+          //       }
+          //     }
+          //   }
+          //   yield `data: [DONE]\n\n`;
+          //   break;
+          // }
+
+          // Decode the chunk and add to buffer
+          const text = decoder.decode(value, { stream: true });
+          buffer += text;
+
+          // Process complete lines
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || ""; // Keep the last potentially incomplete line
+
+          for (const line of lines) {
+            if (line.trim().startsWith("data: ")) {
+              const jsonString = line.replace("data: ", "").trim();
+
+              // if (jsonString === "[DONE]") {
+              //   yield `data: [DONE]\n\n`;
+              //   return;
+              // }
+
+              if (!jsonString) continue;
+
+              try {
+                const data = JSON.parse(jsonString);
+
+                // Send citations once at the beginning
+                if (data?.citations && !citationsSent) {
+                  yield `data: ${JSON.stringify({
+                    citations: data.citations,
+                  })}\n\n`;
+                  citationsSent = true;
+                }
+
+                // Send content chunks
+                const content = data?.choices?.[0]?.delta?.content;
+
+                if (content) {
+                  accumulatedContent += content;
+                  yield `data: ${JSON.stringify({
+                    choices: [{ delta: { content: content } }],
+                  })}\n\n`;
+                }
+
+                // Handle finish reason
+                if (data?.choices?.[0]?.finish_reason === "stop") {
+                  yield `data: [DONE]\n\n`;
+                  return;
+                }
+              } catch (err) {
+                console.warn("Failed to parse chunk:", jsonString, err);
+                // Continue processing other chunks
+              }
+            }
+          }
         }
-      );
-      let data = await response.json();
-      // return {
-      //   success: true,
-      //   message: "b",
-      //   status: 200,
-      //   data: data,
-      //   sources:data.citations,
-      //   finally:formatAiResponse(data.choices[0].message.content)
-      // };
-
-      // console.log({output})
-      //
-      const { followUpQuestions, markdown, title, verdict } = formatAiResponse(
-        data.choices[0].message.content
-      );
-
-      // console.log(".....chat id inside the server.....")
-
-      let createNewMessage = await this.chatService.addNewMessage(
-        userID,
-        chatID,
-        title,
-        {
-          verdict,
-          responseModel: actionType.startsWith("deep")
-            ? "sonar-reasoning-pro"
-            : "sonar-pro",
-          prompt,
-          selectedText,
-          actionType,
-          imageURL: actionType.startsWith("image") ? imageURL : null,
-          answer: markdown,
-          sources: data.citations,
-          responseRawJSON: data.choices[0].message.content,
-        }
-      );
-      return {
-        newMessage: createNewMessage.newMessage,
-        success: createNewMessage.success,
-        status: createNewMessage.status,
-        message: createNewMessage.message,
-        followUpQuestions,
-        title: title,
-        newChatID: createNewMessage.chatID,
-      };
-    } catch (err: any) {
-      console.log(err);
-      throw new CustomError(err.message, 500);
+      } finally {
+        reader.releaseLock();
+      }
+    } catch (error: any) {
+      console.error("askPerplexity error:", error.message);
+      yield `data: ${JSON.stringify({ error: error.message })}\n\n`;
+      yield `data: [DONE]\n\n`;
+      throw error;
     }
   }
 }
 
 export default AIService;
-
-function escapeSpecialChars(jsonStr: string) {
-  return jsonStr.replace(/\n/g, "\\n");
-}

@@ -12,9 +12,7 @@ export function getReadableDomain(url) {
       .filter(Boolean); // remove empty strings
 
     // Capitalize each word
-    const readableName = words
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+    const readableName = words[0].charAt(0).toUpperCase() + words[0].slice(1);
 
     return readableName;
   } catch (e) {
@@ -23,11 +21,43 @@ export function getReadableDomain(url) {
 }
 
 export async function fetchSourceDetails(url) {
-  const res = await fetch(
-    `https://api.microlink.io/?url=${encodeURIComponent(url)}`
-  );
-  const data = await res.json();
-  return data.data;
+  const DEFAULT_IMAGE =
+    "https://static.vecteezy.com/system/resources/thumbnails/004/141/669/small/no-photo-or-blank-image-icon-loading-images-or-missing-image-mark-image-not-available-or-image-coming-soon-sign-simple-nature-silhouette-in-frame-isolated-illustration-vector.jpg";
+  try {
+    const res = await fetch(
+      `https://api.microlink.io/?url=${encodeURIComponent(url)}`
+    );
+    let data = await res.json();
+    const sourceData = data.data;
+    return {
+      title: sourceData.title,
+      image: {
+        url: sourceData.image.url || DEFAULT_IMAGE,
+      },
+      description: sourceData.description,
+      url: url,
+      date: sourceData.date,
+      logo: {
+        url: sourceData.logo.url || DEFAULT_IMAGE,
+      },
+      publisher: sourceData.publisher,
+    };
+  } catch (err) {
+    console.warn("Cannot retrieve source details");
+    return {
+      title: "",
+      image: {
+        url: "https://static.vecteezy.com/system/resources/thumbnails/004/141/669/small/no-photo-or-blank-image-icon-loading-images-or-missing-image-mark-image-not-available-or-image-coming-soon-sign-simple-nature-silhouette-in-frame-isolated-illustration-vector.jpg",
+      },
+      description: "",
+      url: url,
+      date: new Date().toISOString(),
+      logo: {
+        url: "https://static.vecteezy.com/system/resources/thumbnails/004/141/669/small/no-photo-or-blank-image-icon-loading-images-or-missing-image-mark-image-not-available-or-image-coming-soon-sign-simple-nature-silhouette-in-frame-isolated-illustration-vector.jpg",
+      },
+      publisher: getReadableDomain(url),
+    };
+  }
 }
 
 export async function formatAiResponse(response) {
@@ -103,7 +133,7 @@ export async function formatAiResponse(response) {
 }
 
 export function replaceWithClickableLink(body, sources) {
-  console.log(sources);
+  // console.log(sources);
   return body.replace(/\[(\d+)\]/g, (match, num) => {
     const index = parseInt(num, 10);
     const source = sources[index - 1];
@@ -123,7 +153,7 @@ export function createSourceBox(fetchLinkDetails) {
   sourceHeader.className = "source-header";
 
   const img = document.createElement("img");
-  img.src = fetchLinkDetails.fevicon;
+  img.src = fetchLinkDetails.logo.url;
   img.alt = "";
 
   const sourceTitle = document.createElement("div");
@@ -176,7 +206,8 @@ export function generateRandomId() {
 export function createContentBox(
   customPrompt,
   newMessageDetails,
-  resultsContainerObj
+  resultsContainerObj,
+  UPLOADED_DOCUMENTS
 ) {
   console.log("This is the final stage: newMessageDetails", newMessageDetails);
   const randomId = generateRandomId();
@@ -219,31 +250,14 @@ export function createContentBox(
   // Content container
   const contentContainer = document.createElement("div");
   contentContainer.className = "content-container";
-
-  if (newMessageDetails.actionType.startsWith("Image")) {
-    const selectedImageContainer = document.createElement("div");
-    selectedImageContainer.className = "selected-image-container";
-
-    const selectedImage = document.createElement("img");
-    selectedImage.className = "selected-image";
-    selectedImage.src = "";
-    selectedImage.alt = "Selected image";
-
-    selectedImageContainer.appendChild(selectedImage);
-    contentContainer.appendChild(selectedImageContainer);
-  } else if (newMessageDetails.selectedText) {
+  console.log({ UPLOADED_DOCUMENTS });
+  if (newMessageDetails.selectedText) {
+    console.log("newMessageDetails.selectedText");
     const selectedText = document.createElement("div");
     selectedText.className = "selected-text";
     selectedText.innerText = newMessageDetails.selectedText;
     contentContainer.appendChild(selectedText);
   }
-  // else {
-  //   const noContent = document.createElement("div");
-  //   noContent.className = "no-selection";
-  //   noContent.textContent =
-  //     "No content selected. Please select text or an image on a webpage, right-click, and choose a FactSnap option.";
-  //   contentContainer.appendChild(noContent);
-  // }
 
   contentBox.appendChild(contentContainer);
 
@@ -267,7 +281,6 @@ export function createContentBox(
   tab2.style.display = "none";
 
   resultTabs.appendChild(tab1);
-  resultTabs.appendChild(tab2);
 
   // Content panels
   const resultsContent = document.createElement("div");
@@ -294,6 +307,31 @@ export function createContentBox(
   contentBox.appendChild(resultsContainer);
   mainBox.appendChild(contentBox);
 
+  if (UPLOADED_DOCUMENTS.length > 0) {
+    console.log("entered inside the uploaded_documents");
+    const tab3 = document.createElement("span");
+    tab3.className = "tab";
+    tab3.textContent = "Attachments";
+    tab3.dataset.tab = "attachments";
+    // tab3.style.display = "none";
+    resultTabs.appendChild(tab3);
+
+    const panel3 = document.createElement("div");
+    panel3.className = "tab-panel attachments";
+    panel3.dataset.tab = "attachments";
+    UPLOADED_DOCUMENTS.map((image, index) => {
+      const img = document.createElement("img");
+      img.src = image;
+      img.alt = "uploaded image " + (index + 1);
+      panel3.appendChild(img);
+    });
+    panel3.style.display = "none";
+    resultsContent.appendChild(panel3);
+
+    console.log({ tab3, panel3 });
+  }
+  // append sources after attachments
+  resultTabs.appendChild(tab2);
   resultsContainerObj.tab1 = tab1;
   resultsContainerObj.tab2 = tab2;
   resultsContainerObj.panel1 = panel1;
@@ -311,6 +349,9 @@ export function newChatLayout(userInfo) {
         <img src="./assets/new-chat.svg" alt="" id="new-chat" />
       </nav>
     </header>
+
+     <button id="captureBtn">Capture Screenshot</button>
+  <img id="preview" alt="Screenshot preview">
 
     <div class="settings-contanier" id="settings-contanier"">
       <div class="settings-box">
@@ -375,12 +416,6 @@ export function newChatLayout(userInfo) {
         <div id="content-container" class="content-container">
           <div id="selected-text" class="selected-text"></div>
           <div id="selected-image-container" class="selected-image-container">
-            <img
-              id="selected-image"
-              src=""
-              alt="Selected image"
-              class="selected-image"
-            />
           </div>
           <div id="no-content" class="no-selection">
             No content selected. Please select text or an image on a webpage,
@@ -390,15 +425,83 @@ export function newChatLayout(userInfo) {
       </div>
 
      <div class="input-container">
-      <textarea id="search-input" style="overflow-y: auto; max-height: 150px; resize: none;" placeholder="Anything Specific You Want To Know?"></textarea>
+      <textarea id="search-input" style="overflow-y: auto; max-height: 150px; resize: none;" placeholder="Ask Anything..."></textarea>
       <div class="input-container-options">
       <div class="query-types">
+  
+  <input type="file" id="upload-input" style="display: none;" />
+<span data-name="upload-file" title="Upload File" id="upload-btn">
+  <img src="./assets/add.svg" alt=""/>
+</span>
+
       <span data-name="quick-search" title="Quick Search" ><img src="./assets/quick.svg" alt=""/></span>
       <span data-name="fact-check" title="Fact Check"><img src="./assets/fact.svg" alt=""/></span>
       <span data-name="deep-research" title="Deep Research"><img src="./assets/deep.svg" alt=""/></span>
       </div>
-      <button id="send-btn">Send</button>
+      <button id="send-btn"><img src="./assets/send.svg" alt="send"/></button>
       </div>
     </div>
     `;
+}
+
+export async function uploadToCloudinary(base64Data, options = {}) {
+  const {
+    cloudName = "dvk80x6fi",
+    uploadPreset = "factsnap",
+    folder = "",
+    resourceType = "auto",
+  } = options;
+
+  if (!cloudName) throw new Error("cloudName is required");
+  if (!uploadPreset) throw new Error("uploadPreset is required");
+  if (!base64Data) throw new Error("base64Data is required");
+
+  const base64Content = base64Data.split(",")[1];
+
+  // Prepare the form data
+  const formData = new FormData();
+  formData.append("file", base64Data);
+  formData.append("upload_preset", uploadPreset);
+
+  if (folder) {
+    formData.append("folder", folder);
+  }
+
+  // Make the API request to Cloudinary
+  try {
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        `Cloudinary upload failed: ${
+          errorData.error?.message || "Unknown error"
+        }`
+      );
+    }
+
+    const data = await response.json();
+
+    return {
+      secureURL: data.secure_url,
+    };
+  } catch (error) {
+    console.error("Error uploading to Cloudinary:", error);
+    throw error;
+  }
+}
+
+export function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
 }

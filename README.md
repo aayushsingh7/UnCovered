@@ -6,6 +6,7 @@ One-click, real-time AI fact-checking and deep research for everything you see o
 - [chrome.sidePanel](https://developer.chrome.com/docs/extensions/reference/api/sidePanel)
 - [chrome.runtime](https://developer.chrome.com/docs/extensions/reference/api/runtime#description)
 
+
 ## Table of Contents
 - [About The Project](#about-the-project)
 - [Problem Statement](#problem-statement)

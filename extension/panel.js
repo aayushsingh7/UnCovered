@@ -3,13 +3,16 @@ import {
   createContentBox,
   createSourceBox,
   fetchSourceDetails,
+  fileToBase64,
   formatAiResponse,
   generateRandomId,
   getReadableDomain,
   newChatLayout,
   replaceWithClickableLink,
+  uploadToCloudinary,
 } from "./utils/helpers.js";
 import {
+  addNewMessageToDB,
   fetchAIResponse,
   fetchAllChats,
   fetchChat,
@@ -43,7 +46,10 @@ let textElement,
   newChatBtn,
   chatsContainer,
   queryTypes,
-  sendBtn;
+  sendBtn,
+  analyzeScreenBtn,
+  uploadFileInput,
+  uploadFileBtn;
 
 let userDetails = {};
 let selectedChat = {};
@@ -65,6 +71,8 @@ let resultsContainerObj = {
 };
 
 let CHAT_HISTORY = [];
+let UPLOADED_DOCUMENTS = [];
+// let LINKS = [];
 
 marked.setOptions({
   highlight: function (code, lang) {
@@ -98,13 +106,14 @@ function renderSourceBox(source) {
 }
 
 function handleQueryTypeClick(e) {
-  if (e.target.tagName === "SPAN") {
+  if (e.target.tagName === "SPAN" && !e.target.dataset.name == "upload-file") {
     queryTypes.forEach((s) => s.classList.remove("active-query-type"));
     newMessageDetails.actionType = e.target.dataset.name;
     e.target.classList.add("active-query-type");
   } else if (e.target.tagName === "IMG") {
-    queryTypes.forEach((s) => s.classList.remove("active-query-type"));
     const parent = e.target.closest("span");
+    if (parent.dataset.name == "upload-file") return;
+    queryTypes.forEach((s) => s.classList.remove("active-query-type"));
     newMessageDetails.actionType = parent.dataset.name;
     if (parent) {
       parent.classList.add("active-query-type");
@@ -191,6 +200,69 @@ function handleSettingsContainerClick() {
   settingsContainer.style.display = "none";
 }
 
+async function analyzeScreen() {
+  chrome.runtime.sendMessage({ action: "captureScreen" }, async (response) => {
+    if (response && response.screenshotUrl) {
+      contentBox.style.display = "block";
+      removeSelectedText.style.display = "block";
+      contentBox.classList.add("show-content-box");
+      imageContainer.style.display = "flex";
+      newMessageDetails.selectedText = "";
+      textElement.style.display = "none";
+      let div = document.createElement("div");
+      let imgTag = document.createElement("img");
+      imgTag.src = response.screenshotUrl;
+      imgTag.alt = "image";
+      div.appendChild(imgTag);
+      imageContainer.appendChild(div);
+      const { secureURL } = await uploadToCloudinary(response.screenshotUrl);
+      console.log(secureURL);
+      imgTag.src = secureURL;
+      UPLOADED_DOCUMENTS.push(secureURL);
+    }
+  });
+}
+
+async function openDailogBox() {
+  uploadFileInput.click();
+}
+
+async function handleUploadFile(e) {
+  console.log("hello world start");
+  // uploadFileInput.addEventListener("change", async (e) => {
+  console.log("hello world");
+  contentBox.style.display = "block";
+  removeSelectedText.style.display = "block";
+  contentBox.classList.add("show-content-box");
+  imageContainer.style.display = "flex";
+  newMessageDetails.selectedText = "";
+  textElement.style.display = "none";
+  const base64 = await fileToBase64(e.target.files[0]);
+  const extension = e.target.files[0].name.slice(
+    e.target.files[0].name.lastIndexOf(".")
+  );
+  console.log({ extension });
+  if (
+    extension == ".PNG" ||
+    extension == ".JPG" ||
+    extension == ".WEBP" ||
+    extension == ".JPEG"
+  ) {
+    let div = document.createElement("div");
+    let imgTag = document.createElement("img");
+    imgTag.src = base64;
+    imgTag.alt = "image";
+    div.appendChild(imgTag);
+    imageContainer.appendChild(div);
+    const { secureURL } = await uploadToCloudinary(base64);
+    imgTag.src = secureURL;
+    UPLOADED_DOCUMENTS.push(secureURL);
+  } else {
+    alert("Only images upload are supported for now");
+  }
+  // });
+}
+
 function refreshElements() {
   textElement = document.getElementById("selected-text");
   imageContainer = document.getElementById("selected-image-container");
@@ -214,9 +286,18 @@ function refreshElements() {
   chatsContainer = document.getElementById("chats-container");
   queryTypes = document.querySelectorAll(".query-types span");
   sendBtn = document.getElementById("send-btn");
+  analyzeScreenBtn = document.getElementById("captureBtn");
+  uploadFileInput = document.getElementById("upload-input");
+  uploadFileBtn = document.getElementById("upload-btn");
 
   if (userDetails.email) {
     // Remove old listeners
+    if (uploadFileBtn)
+      uploadFileBtn.removeEventListener("click", handleUploadFile);
+
+    if (uploadFileInput)
+      uploadFileInput.removeEventListener("change", handleUploadFile);
+
     queryTypes.forEach((span) => {
       span.removeEventListener("click", handleQueryTypeClick);
     });
@@ -247,11 +328,21 @@ function refreshElements() {
         "click",
         handleSettingsContainerClick
       );
+    if (analyzeScreenBtn)
+      analyzeScreenBtn.removeEventListener("click", analyzeScreen);
 
     // Add listeners
+
+    if (uploadFileBtn) uploadFileBtn.addEventListener("click", openDailogBox);
+    if (uploadFileInput)
+      uploadFileInput.addEventListener("change", handleUploadFile);
+    if (analyzeScreenBtn)
+      analyzeScreenBtn.addEventListener("click", analyzeScreen);
+
     queryTypes.forEach((span) => {
       span.addEventListener("click", handleQueryTypeClick);
     });
+
     if (searchTextarea) {
       searchTextarea.addEventListener("input", handleAdjustHeight);
       searchTextarea.addEventListener("focus", handleAdjustHeight);
@@ -329,7 +420,58 @@ function handleContentBoxDisplay(type = "show") {
   }
 }
 
+function extractLinks(body) {
+  const urlPattern = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/g;
+  const matches = body.match(urlPattern);
+  if (!matches) {
+    return [];
+  }
+  const cleanedLinks = matches.map((url) => {
+    return url.replace(/[.,;:!?]+$/, "");
+  });
+
+  return [...new Set(cleanedLinks)];
+}
+
+function generatePromptContent(customPrompt, LINKS) {
+  const queryTypePrompt = customPrompt?.trim()
+    ? customPrompt
+    : newMessageDetails.actionType.startsWith("fact-check")
+    ? "Please verify the accuracy of this claim. Start with a short conclusion, then present supporting evidence and counterpoints."
+    : newMessageDetails.actionType.startsWith("deep-research")
+    ? "Please provide a comprehensive analysis of this topic. Start with a short summary, followed by structured insights."
+    : "Please provide a clear and concise answer to the question. Give comprehensive details if required";
+
+  // Build source sections
+  const contextText = newMessageDetails.selectedText || "Text: Not provided";
+
+  const imageSection =
+    UPLOADED_DOCUMENTS.length > 0
+      ? `Images:\n${UPLOADED_DOCUMENTS.map(
+          (link, i) => `${i + 1}. ${link}`
+        ).join("\n")}`
+      : "Images: Not provided";
+
+  const linkSection =
+    LINKS.length > 0
+      ? `Links:\n${LINKS.map((link, i) => `${i + 1}. ${link}`).join("\n")}`
+      : "Links: Not provided";
+
+  return {
+    queryTypePrompt,
+    contextText,
+    imageSection,
+    linkSection,
+  };
+}
+
 async function addNewMessage(customPrompt) {
+  sendBtn.innerHTML = `<img alt="pause" src="./assets/pause.svg" />`;
+  const populatedSources = [];
+  const LINKS = extractLinks(
+    customPrompt + " " + newMessageDetails.selectedText
+  );
+
   if (CHAT_HISTORY.length > 5) {
     CHAT_HISTORY = CHAT_HISTORY.slice(2);
   }
@@ -350,7 +492,8 @@ async function addNewMessage(customPrompt) {
     let { contentType, mainBox: newMessageBox } = createContentBox(
       customPrompt,
       newMessageDetails,
-      resultsContainerObj
+      resultsContainerObj,
+      UPLOADED_DOCUMENTS
     );
     messagesContainer.appendChild(newMessageBox);
     prevCustomInput = searchTextarea.value;
@@ -362,83 +505,143 @@ async function addNewMessage(customPrompt) {
 
     const USER_MESSAGE = {
       role: "user",
-      content: `
-Query Type: ${newMessageDetails.actionType}
-User Prompt: ${
-        customPrompt?.trim()
-          ? customPrompt
-          : newMessageDetails.actionType.startsWith("fact-check")
-          ? "Please verify the accuracy of this claim. Start with a short conclusion, then present supporting evidence and counterpoints."
-          : newMessageDetails.actionType.startsWith("deep-research")
-          ? "Please provide a comprehensive analysis of this topic. Start with a short summary, followed by structured insights."
-          : "Please provide a clear and concise answer to the question. Give comprehensive details if required"
-      }
-Context: ${newMessageDetails.selectedText || "No additional context provided."}
-`,
+      content: [
+        {
+          type: "text",
+          text: `Query Type: ${newMessageDetails.actionType}
+User Prompt: ${customPrompt}
+User Context: ${
+            newMessageDetails.selectedText || "No Additional Context Provided"
+          }`,
+        },
+        ...LINKS.map((link) => ({
+          type: "text",
+          text: link,
+        })),
+        ...UPLOADED_DOCUMENTS.map((imageLink) => ({
+          type: "image_url",
+          image_url: { url: imageLink },
+        })),
+      ],
     };
+
     CHAT_HISTORY.push(USER_MESSAGE);
 
-    const { newMessage, followUpQuestions, newChat } = await fetchAIResponse(
+    const { newMessage } = await fetchAIResponse(
       userDetails._id,
       selectedChat.chatID,
       newMessageDetails.selectedText,
       customPrompt,
       newMessageDetails.actionType,
-      null,
-      CHAT_HISTORY
+      CHAT_HISTORY,
+      (data) => {
+        try {
+          loadingAiResponse = false;
+          sendBtn.innerHTML = "Send";
+          let replaceWithLink = replaceWithClickableLink(
+            data.cleanContent,
+            data.citations
+          );
+          let markedHTML = marked(replaceWithLink);
+          resultsContainerObj.panel1.innerHTML = markedHTML;
+          if (data.verdict) {
+            contentType.innerHTML += `<div class='final-fact-verdict ${
+              data.verdict
+            }>${
+              data.verdict == "true"
+                ? "Fact is True"
+                : data.verdict == "false"
+                ? "Fact is False"
+                : "Not Confirmed"
+            }</div>`;
+          }
+          if (
+            data.citations.length > 0 &&
+            resultsContainerObj.panel2.childNodes.length == 0
+          ) {
+            resultsContainerObj.tab2.style.display = "block";
+            let loading = document.createElement("div");
+            loading.className = "loading-sources";
+            loading.innerHTML = `<div class="loader"></div>`;
+            resultsContainerObj.panel2.appendChild(loading);
+            resultsContainerObj.tab2.style.display = "block";
+            data.citations.map(async (source, index) => {
+              // if (index < 2) {
+              //   const populatedSource = await fetchSourceDetails(source);
+              //   resultsContainerObj.panel2.appendChild(
+              //     createSourceBox(populatedSource)
+              //   );
+              //   populatedSources.push(populatedSource);
+              // } else {
+              resultsContainerObj.panel2.innerHTML += `<a href="${source}">${source}</a>`;
+              // }
+            });
+            const loadingElem =
+              resultsContainerObj.panel2.querySelector(".loading-sources");
+            if (loadingElem) {
+              resultsContainerObj.panel2.removeChild(loadingElem);
+            }
+          }
+        } catch (err) {
+          console.warn("Error while streamining");
+          console.error(err.message);
+        }
+      },
+      async (completeData) => {
+        try {
+          const { newChat, newMessage } = await addNewMessageToDB(
+            completeData.verdict,
+            userDetails._id,
+            selectedChat.chatID,
+            customPrompt,
+            completeData.cleanContent,
+            completeData.content,
+            populatedSources,
+            UPLOADED_DOCUMENTS,
+            newMessageDetails.selectedText,
+            customPrompt,
+            newMessageDetails.actionType
+          );
+          if (newChat != null) selectedChat = newChat;
+          if (!newMessage) {
+            handleContentBoxDisplay("show");
+            alert("Oops! looks like something went wrong🤦‍♀️");
+            return;
+          }
+
+          const { responseRawJSON } = newMessage;
+          const ASSISTANT_MESSAGE = {
+            role: "assistant",
+            content: `Answer: ${rawJSON}`,
+          };
+          CHAT_HISTORY.push(ASSISTANT_MESSAGE);
+
+          newMessageDetails = {
+            selectedText: "",
+            actionType: "",
+          };
+
+          resultsContainerObj = {
+            tab1: null,
+            tab2: null,
+            tab3: null,
+            panel1: null,
+            panel2: null,
+            panel3: null,
+          };
+
+          messagesContainer.scrollTo({
+            top: newMessageBox.offsetTop - 70,
+            behavior: "smooth",
+          });
+
+          loadingAiResponse = false;
+        } catch (err) {
+          console.warn("Error while completing the message process");
+          console.error(err.message);
+        }
+      }
     );
-    if (newChat != null) selectedChat = newChat;
-    if (!newMessage || !followUpQuestions) {
-      handleContentBoxDisplay("show");
-      alert("Oops! looks like something went wrong🤦‍♀️");
-      return;
-    }
-
-    const { answer: markdown, sources } = newMessage;
-    resultsContainerObj.tab2.style.display = "block";
-    const ASSISTANT_MESSAGE = {
-      role: "assistant",
-      content: `
-Answer: ${markdown}
-Sources: ${sources}`,
-    };
-    CHAT_HISTORY.push(ASSISTANT_MESSAGE);
-    resultsContainerObj.panel2.innerHTML += sources
-      ?.map(renderSourceBox)
-      .join("");
-
-    const editedHTML = replaceWithClickableLink(markdown, sources);
-    const htmlContent = marked.parse(editedHTML);
-    resultsContainerObj.panel1.innerHTML = htmlContent;
-
-    if (newMessageDetails.actionType.startsWith("fact")) {
-      contentType.innerHTML += `<div class='final-fact-verdict true'>${
-        newMessage.verdict === "true"
-          ? "Fact is True"
-          : newMessage.verdict === "false"
-          ? "Fact is False"
-          : "Not Confirmed"
-      }</div>`;
-    }
-
-    newMessageDetails = {
-      selectedText: "",
-      actionType: "",
-    };
-
-    resultsContainerObj = {
-      tab1: null,
-      tab2: null,
-      tab3: null,
-      panel1: null,
-      panel2: null,
-      panel3: null,
-    };
-
-    requestAnimationFrame(() => {
-      messagesContainer.scrollTop = newMessage.offsetTop - 70;
-    });
-    loadingAiResponse = false;
   } catch (err) {
     handleContentBoxDisplay("show");
     console.log(err);
@@ -446,29 +649,106 @@ Sources: ${sources}`,
   }
 }
 
-function updateContent() {
+// function updateContent() {
+//   if (!userDetails.email) return;
+//   textElement.style.display = "none";
+//   // imageContainer.style.display = "none";
+//   noContentElement.style.display = "none";
+
+//   chrome.runtime.sendMessage({ action: "getContent" }, (response) => {
+//     if (chrome.runtime.lastError) {
+//       noContentElement.style.display = "block";
+//       noContentElement.textContent = "Error retrieving content.";
+//       return;
+//     }
+
+//     if (!response.contentType) return;
+
+//     if (response.contentType === "text" && response.text) {
+//       contentBox.style.display = "block";
+//       removeSelectedText.style.display = "block";
+//       contentBox.classList.add("show-content-box");
+//       textElement.style.display = "block";
+//       newMessageDetails.selectedText = response.text;
+//       textElement.textContent = response.text;
+//       handleSelectedActionType(queryTypes, response);
+
+//       if (response.actionType === "deep-research") {
+//         newMessageDetails.actionType = "deep-research";
+//         if (deepResearchStatus) addNewMessage();
+//       } else if (response.actionType === "fact-check") {
+//         newMessageDetails.actionType = "fact-check";
+//         if (factCheckStatus) addNewMessage();
+//       } else {
+//         newMessageDetails.actionType = "quick-search";
+//         if (quickSearchStatus) addNewMessage();
+//       }
+//     } else if (response.contentType === "image" && response.imageUrl) {
+//       contentBox.style.display = "block";
+//       removeSelectedText.style.display = "block";
+//       contentBox.classList.add("show-content-box");
+//       imageContainer.style.display = "flex";
+//       imageElement.src = response.imageUrl;
+//       actionTagElement.textContent = "Image Analysis";
+//       actionTagElement.className = "action-tag image";
+//       newMessageDetails.actionType = "Image Analysis";
+//     } else {
+//       // noContentElement.style.display = "block";
+//       // noContentElement.textContent =
+//       //   "No content selected. Please select text or an image on a webpage, right-click, and choose a FactSnap option.";
+//       // actionTagElement.textContent = "No Action";
+//       // actionTagElement.className = "action-tag";
+//       // newMessageDetails.actionType = "No Action";
+//     }
+//   });
+// }
+
+async function updateContent() {
   if (!userDetails.email) return;
   textElement.style.display = "none";
-  imageContainer.style.display = "none";
+  // imageContainer.style.display = "none";
   noContentElement.style.display = "none";
 
-  chrome.runtime.sendMessage({ action: "getContent" }, (response) => {
+  chrome.runtime.sendMessage({ action: "getContent" }, async (response) => {
     if (chrome.runtime.lastError) {
       noContentElement.style.display = "block";
       noContentElement.textContent = "Error retrieving content.";
       return;
     }
 
+    console.log(
+      "========================================================================",
+      { response }
+    );
     if (!response.contentType) return;
+    handleSelectedActionType(queryTypes, response);
 
-    if (response.contentType === "text" && response.text) {
+    // Handle both text selections and links (which are stored in text field)
+    if (
+      (response.contentType === "text" || response.contentType === "link") &&
+      response.text
+    ) {
       contentBox.style.display = "block";
       removeSelectedText.style.display = "block";
       contentBox.classList.add("show-content-box");
       textElement.style.display = "block";
       newMessageDetails.selectedText = response.text;
       textElement.textContent = response.text;
-      handleSelectedActionType(queryTypes, response);
+
+      // For links, you might want to add special styling or indication
+      if (response.contentType === "link") {
+        textElement.classList.add("link-content");
+        // Optional: add a visual indicator that this is a link
+        textElement.textContent = `Link: ${response.text}`;
+      } else {
+        textElement.classList.remove("link-content");
+      }
+
+      console.log(
+        "===========================================",
+        { response },
+        "============================================="
+      );
 
       if (response.actionType === "deep-research") {
         newMessageDetails.actionType = "deep-research";
@@ -481,21 +761,32 @@ function updateContent() {
         if (quickSearchStatus) addNewMessage();
       }
     } else if (response.contentType === "image" && response.imageUrl) {
+      newMessageDetails.actionType = response.actionType;
       contentBox.style.display = "block";
       removeSelectedText.style.display = "block";
       contentBox.classList.add("show-content-box");
-      imageContainer.style.display = "block";
-      imageElement.src = response.imageUrl;
-      actionTagElement.textContent = "Image Analysis";
-      actionTagElement.className = "action-tag image";
-      newMessageDetails.actionType = "Image Analysis";
+      imageContainer.style.display = "flex";
+      let div = document.createElement("div");
+      let imgTag = document.createElement("img");
+      imgTag.src = response.imageUrl;
+      imgTag.alt = "image";
+      div.appendChild(imgTag);
+      imageContainer.appendChild(div);
+      const { secureURL } = await uploadToCloudinary(response.imageUrl);
+      imgTag.src = secureURL;
+      UPLOADED_DOCUMENTS.push(secureURL);
+
+      // imageElement.src = response.imageUrl;
+      // actionTagElement.textContent = "Image Analysis";
+      // actionTagElement.className = "action-tag image";
+      // newMessageDetails.actionType = "Image Analysis";
     } else {
-      noContentElement.style.display = "block";
-      noContentElement.textContent =
-        "No content selected. Please select text or an image on a webpage, right-click, and choose a FactSnap option.";
-      actionTagElement.textContent = "No Action";
-      actionTagElement.className = "action-tag";
-      newMessageDetails.actionType = "No Action";
+      // noContentElement.style.display = "block";
+      // noContentElement.textContent =
+      //   "No content selected. Please select text or an image on a webpage, right-click, and choose a FactSnap option.";
+      // actionTagElement.textContent = "No Action";
+      // actionTagElement.className = "action-tag";
+      // newMessageDetails.actionType = "No Action";
     }
   });
 }
