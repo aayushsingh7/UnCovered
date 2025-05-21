@@ -1,13 +1,3 @@
-import { fetchSourceDetails, replaceWithClickableLink } from "./helpers.js";
-import { marked } from "../libs/marked.esm.js";
-
-marked.setOptions({
-  highlight: function (code, lang) {
-    return hljs.highlightAuto(code).value;
-  },
-  langPrefix: "hljs language-",
-});
-
 export async function fetchAllChats(userID) {
   try {
     const response = await fetch(
@@ -42,13 +32,6 @@ export async function fetchMessages(chatID, offset = 0) {
   }
 }
 
-export async function fetchChat(chatID) {
-  try {
-  } catch (err) {
-    console.log(err);
-  }
-}
-
 export async function searchChat(query) {
   try {
   } catch (err) {
@@ -64,7 +47,6 @@ function extractAndCleanContent(content, verdict) {
     const verdictMatch = cleanContent.match(/\{verdict:\s*"?([^}"]*)"?\s*\}/);
     if (verdictMatch) {
       extractedVerdict = verdictMatch[1];
-      console.log("Verdict extracted:", extractedVerdict);
     }
   }
 
@@ -135,10 +117,7 @@ export async function fetchAIResponse(
     try {
       while (!isComplete) {
         const { value, done } = await reader.read();
-
-        // Check if stream is actually done
         if (done) {
-          console.log("Stream ended naturally");
           isComplete = true;
           break;
         }
@@ -152,7 +131,6 @@ export async function fetchAIResponse(
             const jsonString = line.replace("data: ", "").trim();
 
             if (jsonString === "[DONE]") {
-              console.log("Stream complete.");
               isComplete = true;
               break;
             }
@@ -166,7 +144,6 @@ export async function fetchAIResponse(
               }
               if (data?.citations && !citations) {
                 citations = data.citations;
-                console.log({ citations });
               }
 
               const content = data?.choices?.[0]?.delta?.content;
@@ -178,21 +155,9 @@ export async function fetchAIResponse(
                   verdict
                 );
 
-                // Update verdict and followUpQuestions as they become available
                 if (extracted.verdict !== null && verdict === null) {
                   verdict = extracted.verdict;
-                  console.log("Verdict extracted:", verdict);
                 }
-
-                // Update container with cleaned formatted content
-                // if (answerContainer) {
-                //   let replaceWithLink = replaceWithClickableLink(
-                //     extracted.cleanContent,
-                //     citations
-                //   );
-                //   let markedHTML = marked(replaceWithLink);
-                //   answerContainer.innerHTML = markedHTML;
-                // }
 
                 if (onMessage) {
                   onMessage({
@@ -215,9 +180,7 @@ export async function fetchAIResponse(
         accumulatedContent,
         verdict
       );
-      console.log("Stream processing completed successfully");
 
-      // Call onComplete callback if provided
       if (onComplete) {
         onComplete({
           content: accumulatedContent,
@@ -227,7 +190,6 @@ export async function fetchAIResponse(
         });
       }
 
-      // Return the final result
       return {
         newMessage: {
           answer: accumulatedContent,
@@ -240,8 +202,6 @@ export async function fetchAIResponse(
     }
   } catch (err) {
     console.error("Fetch error:", err);
-
-    // Cleanup on error
     if (abortController) {
       abortController.abort();
     }
@@ -302,24 +262,6 @@ export async function addNewMessageToDB(
       newMessage: data.newMessage,
       newChat: data.newChat,
     };
-  } catch (err) {
-    console.log(err);
-  }
-}
-
-export async function verifyOrCreateUser(userInfo) {
-  try {
-    const response = await fetch(
-      `http://localhost:4000/api/v1/users/verifyOrCreateUser`,
-      {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userInfo),
-      }
-    );
-    const user = await response.json();
-    return user;
   } catch (err) {
     console.log(err);
   }

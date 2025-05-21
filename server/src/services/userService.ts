@@ -16,7 +16,7 @@ class UserSerivce {
           success: true,
           message: "User already exists",
           statusCode: 200,
-          user:isUserAlreadyExists
+          user: isUserAlreadyExists,
         };
       } else {
         let newUser = new User(userData);
@@ -25,11 +25,10 @@ class UserSerivce {
           success: true,
           message: "New User Created Successfully",
           statusCode: 201,
-          user:newUser
+          user: newUser,
         };
       }
     } catch (err: any) {
-      console.log("userSerivce Error", err.message)
       throw new CustomError(err.message, 500);
     }
   }

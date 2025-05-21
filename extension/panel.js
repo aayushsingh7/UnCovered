@@ -4,30 +4,40 @@ import {
   fetchAIResponse,
   fetchAllChats,
   fetchMessages,
-  verifyOrCreateUser,
-} from "./utils/api.js";
+} from "./utils/api/api.js";
+import { getUserInfo } from "./utils/api/authApi.js";
 import {
+  addListeners,
   createContentBox,
   createSourceBox,
-  fetchSourceDetails,
-  fileToBase64,
-  getReadableDomain,
-  newChatLayout,
-  replaceWithClickableLink,
+  handleAdjustHeight,
+  handleCloseMenuBarClick,
+  handleContentBoxDisplay,
+  handleMenuBarClick,
+  handleQueryTypeClick,
+  handleRemoveSelectedContent,
+  handleSelectedActionType,
+  handleSettingsBtnClick,
+  handleSettingsContainerClick,
+  handleShowContentBox,
+  removeListeners,
+  updateToggle,
+} from "./utils/helpers/domHelpers.js";
+import {
+  analyzeScreen,
+  handleUploadFile,
   uploadToCloudinary,
-} from "./utils/helpers.js";
+} from "./utils/helpers/fileHelpers.js";
+import { fetchSourceDetails, replaceWithClickableLink } from "./utils/utils.js";
 
 let textElement,
   imageContainer,
-  imageElement,
   noContentElement,
-  actionTagElement,
   messagesContainer,
   contentBox,
   sideNavbar,
   menuBar,
   closeMenuBar,
-  searchBox,
   searchTextarea,
   removeSelectedContent,
   settingsBtn,
@@ -75,73 +85,11 @@ marked.setOptions({
   langPrefix: "hljs language-",
 });
 
-function renderSourceBox(source) {
-  return `
-    <div class="source-box">
-      <div class="source-header">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a3/Image-not-found.png?20210521171500" alt="" />
-        <div class="source-title">
-          <span class="title">${getReadableDomain(source.url)}</span>
-          <a href="${source.url}" class="source-link">
-           ${source.url}
-          </a>
-        </div>
-      </div>
-      <div class="source-info">
-        ${source.heading ? '<a href="#">Headline Placeholder</a>' : ""}
-        ${
-          source.description
-            ? "<p>Description text placeholder goes here.</p>"
-            : ""
-        }
-      </div>
-    </div>
-  `;
-}
-
-function handleQueryTypeClick(e) {
-  if (e.target.tagName === "SPAN" && !e.target.dataset.name == "upload-file") {
-    queryTypes.forEach((s) => s.classList.remove("active-query-type"));
-    newMessageDetails.actionType = e.target.dataset.name;
-    e.target.classList.add("active-query-type");
-  } else if (e.target.tagName === "IMG") {
-    const parent = e.target.closest("span");
-    if (parent.dataset.name == "upload-file") return;
-    queryTypes.forEach((s) => s.classList.remove("active-query-type"));
-    newMessageDetails.actionType = parent.dataset.name;
-    if (parent) {
-      parent.classList.add("active-query-type");
-    }
-  }
-}
-
-function handleAdjustHeight() {
-  searchTextarea.style.height = "50px";
-  const scrollHeight = searchTextarea.scrollHeight;
-  const newHeight = Math.min(Math.max(50, scrollHeight), 200);
-  searchTextarea.style.height = newHeight + "px";
-}
-
-function handleMenuBarClick() {
-  sideNavbar.classList.add("show-sidenav");
-}
-
-function handleCloseMenuBarClick() {
-  sideNavbar.classList.remove("show-sidenav");
-}
-
 function handleSendBtnClick(e) {
   if (!loadingAiResponse) {
     addNewMessage(searchTextarea.value);
     searchTextarea.style.height = "50px";
   }
-}
-
-function handleRemoveSelectedContent() {
-  newMessageDetails.selectedText = "";
-  UPLOADED_DOCUMENTS = [];
-  contentBox.style.display = "none";
-  removeSelectedContent.style.display = "none";
 }
 
 function handleNewChatBtnClick() {
@@ -156,12 +104,14 @@ function handleNewChatBtnClick() {
   `;
   refreshElements();
   newMessageDetails.actionType = "quick-search";
-  handleRemoveSelectedContent();
-  // newMessageDetails.selectedText = "";
-  // UPLOADED_DOCUMENTS = [];
+  handleRemoveSelectedContent(
+    contentBox,
+    removeSelectedContent,
+    newMessageDetails,
+    UPLOADED_DOCUMENTS,
+    imageContainer
+  );
   searchTextarea.value = "";
-  // contentBox.style.display = "none";
-  // removeSelectedContent.style.display = "none";
   selectedChat = {};
   handleSelectedActionType(queryTypes, { actionType: "quick-search" });
 }
@@ -187,84 +137,19 @@ function handleFactCheckClick(e) {
   chrome.storage.local.set({ factCheck: factCheckStatus });
 }
 
-function handleSettingsBtnClick() {
-  sideNavbar.classList.remove("show-sidenav");
-  settingsContainer.style.display = "flex";
-  updateToggle(factCheck, factCheckStatus);
-  updateToggle(quickSearch, quickSearchStatus);
-  updateToggle(deepResearch, deepResearchStatus);
-}
-
-function handleSettingsContainerClick() {
-  settingsContainer.style.display = "none";
-}
-
-async function analyzeScreen() {
-  chrome.runtime.sendMessage({ action: "captureScreen" }, async (response) => {
-    if (response && response.screenshotUrl) {
-      handleShowContentBox();
-      imageContainer.style.display = "flex";
-      newMessageDetails.selectedText = "";
-      textElement.style.display = "none";
-      let div = document.createElement("div");
-      let imgTag = document.createElement("img");
-      imgTag.src = response.screenshotUrl;
-      imgTag.alt = "image";
-      div.appendChild(imgTag);
-      imageContainer.appendChild(div);
-      const { secureURL } = await uploadToCloudinary(response.screenshotUrl);
-      console.log(secureURL);
-      imgTag.src = secureURL;
-      UPLOADED_DOCUMENTS.push(secureURL);
-    }
-  });
-}
-
 async function openDailogBox() {
   uploadFileInput.click();
-}
-
-async function handleUploadFile(e) {
-  handleShowContentBox();
-  imageContainer.style.display = "flex";
-  newMessageDetails.selectedText = "";
-  textElement.style.display = "none";
-  const base64 = await fileToBase64(e.target.files[0]);
-  const extension = e.target.files[0].name.slice(
-    e.target.files[0].name.lastIndexOf(".")
-  );
-  if (
-    extension == ".PNG" ||
-    extension == ".JPG" ||
-    extension == ".WEBP" ||
-    extension == ".JPEG"
-  ) {
-    let div = document.createElement("div");
-    let imgTag = document.createElement("img");
-    imgTag.src = base64;
-    imgTag.alt = "image";
-    div.appendChild(imgTag);
-    imageContainer.appendChild(div);
-    const { secureURL } = await uploadToCloudinary(base64);
-    imgTag.src = secureURL;
-    UPLOADED_DOCUMENTS.push(secureURL);
-  } else {
-    alert("Only images upload are supported for now");
-  }
 }
 
 function refreshElements() {
   textElement = document.getElementById("selected-text");
   imageContainer = document.getElementById("selected-image-container");
-  imageElement = document.getElementById("selected-image");
   noContentElement = document.getElementById("no-content");
-  actionTagElement = document.getElementById("action-tag");
   messagesContainer = document.getElementById("messages-container");
   contentBox = document.getElementById("content-box");
   sideNavbar = document.getElementById("sidenav");
   menuBar = document.getElementById("menu");
   closeMenuBar = document.getElementById("close-btn");
-  searchBox = document.getElementById("search-box");
   searchTextarea = document.getElementById("search-input") || null;
   removeSelectedContent = document.getElementById("remove-selected-text");
   settingsBtn = document.getElementById("settings-btn");
@@ -281,100 +166,73 @@ function refreshElements() {
   uploadFileBtn = document.getElementById("upload-btn");
 
   if (userDetails.email) {
-    // Remove old listeners
-    if (uploadFileBtn)
-      uploadFileBtn.removeEventListener("click", handleUploadFile);
+    const elements = {
+      uploadFileBtn,
+      uploadFileInput,
+      queryTypes,
+      searchTextarea,
+      menuBar,
+      closeMenuBar,
+      sendBtn,
+      removeSelectedContent,
+      newChatBtn,
+      deepResearch,
+      quickSearch,
+      factCheck,
+      settingsBtn,
+      settingsContainer,
+      analyzeScreenBtn,
+    };
 
-    if (uploadFileInput)
-      uploadFileInput.removeEventListener("change", handleUploadFile);
+    const handlers = {
+      handleQueryTypeClick: (e) =>
+        handleQueryTypeClick(e, queryTypes, newMessageDetails),
+      handleAdjustHeight: () => handleAdjustHeight(searchTextarea),
+      handleMenuBarClick: () => handleMenuBarClick(sideNavbar),
+      handleCloseMenuBarClick: () => handleCloseMenuBarClick(sideNavbar),
+      handleSendBtnClick,
+      handleRemoveSelectedContent: () =>
+        handleRemoveSelectedContent(
+          contentBox,
+          removeSelectedContent,
+          newMessageDetails,
+          UPLOADED_DOCUMENTS,
+          imageContainer
+        ),
+      handleNewChatBtnClick,
+      handleDeepResearchClick,
+      handleQuickSearchClick,
+      handleFactCheckClick,
+      handleSettingsBtnClick: () =>
+        handleSettingsBtnClick(sideNavbar, settingsContainer),
+      handleSettingsContainerClick: () =>
+        handleSettingsContainerClick(settingsContainer),
+      analyzeScreen: (e) =>
+        analyzeScreen(
+          contentBox,
+          removeSelectedContent,
+          imageContainer,
+          newMessageDetails,
+          textElement,
+          UPLOADED_DOCUMENTS
+        ),
+      openDailogBox,
+      handleUploadFile: (e) =>
+        handleUploadFile(
+          e,
+          contentBox,
+          removeSelectedContent,
+          imageContainer,
+          newMessageDetails,
+          textElement,
+          UPLOADED_DOCUMENTS
+        ),
+    };
 
-    queryTypes.forEach((span) => {
-      span.removeEventListener("click", handleQueryTypeClick);
-    });
-    if (searchTextarea) {
-      searchTextarea.removeEventListener("input", handleAdjustHeight);
-      searchTextarea.removeEventListener("focus", handleAdjustHeight);
-    }
-    if (menuBar) menuBar.removeEventListener("click", handleMenuBarClick);
-    if (closeMenuBar)
-      closeMenuBar.removeEventListener("click", handleCloseMenuBarClick);
-    if (sendBtn) sendBtn.removeEventListener("click", handleSendBtnClick);
-    if (removeSelectedContent)
-      removeSelectedContent.removeEventListener(
-        "click",
-        handleRemoveSelectedContent
-      );
-    if (newChatBtn)
-      newChatBtn.removeEventListener("click", handleNewChatBtnClick);
-    if (deepResearch)
-      deepResearch.removeEventListener("click", handleDeepResearchClick);
-    if (quickSearch)
-      quickSearch.removeEventListener("click", handleQuickSearchClick);
-    if (factCheck) factCheck.removeEventListener("click", handleFactCheckClick);
-    if (settingsBtn)
-      settingsBtn.removeEventListener("click", handleSettingsBtnClick);
-    if (settingsContainer)
-      settingsContainer.removeEventListener(
-        "click",
-        handleSettingsContainerClick
-      );
-    if (analyzeScreenBtn)
-      analyzeScreenBtn.removeEventListener("click", analyzeScreen);
-
-    // Add listeners
-
-    if (uploadFileBtn) uploadFileBtn.addEventListener("click", openDailogBox);
-    if (uploadFileInput)
-      uploadFileInput.addEventListener("change", handleUploadFile);
-    if (analyzeScreenBtn)
-      analyzeScreenBtn.addEventListener("click", analyzeScreen);
-
-    queryTypes.forEach((span) => {
-      span.addEventListener("click", handleQueryTypeClick);
-    });
-
-    if (searchTextarea) {
-      searchTextarea.addEventListener("input", handleAdjustHeight);
-      searchTextarea.addEventListener("focus", handleAdjustHeight);
-    }
-    if (menuBar) menuBar.addEventListener("click", handleMenuBarClick);
-    if (closeMenuBar)
-      closeMenuBar.addEventListener("click", handleCloseMenuBarClick);
-    if (sendBtn) sendBtn.addEventListener("click", handleSendBtnClick);
-    if (removeSelectedContent)
-      removeSelectedContent.addEventListener(
-        "click",
-        handleRemoveSelectedContent
-      );
-    if (newChatBtn) newChatBtn.addEventListener("click", handleNewChatBtnClick);
-    if (deepResearch)
-      deepResearch.addEventListener("click", handleDeepResearchClick);
-    if (quickSearch)
-      quickSearch.addEventListener("click", handleQuickSearchClick);
-    if (factCheck) factCheck.addEventListener("click", handleFactCheckClick);
-    if (settingsBtn)
-      settingsBtn.addEventListener("click", handleSettingsBtnClick);
-    if (settingsContainer)
-      settingsContainer.addEventListener("click", handleSettingsContainerClick);
-
-    // Initial height adjustment
-    if (searchTextarea) handleAdjustHeight();
+    removeListeners(elements, handlers);
+    addListeners(elements, handlers);
+    if (searchTextarea) handleAdjustHeight(searchTextarea);
   }
-}
-
-function updateToggle(element, status) {
-  element.innerText = status ? "ON" : "OFF";
-  element.classList.toggle("on", status);
-}
-
-function handleSelectedActionType(queryTypes, response) {
-  queryTypes.forEach((span) => {
-    if (span.dataset.name === response.actionType) {
-      span.classList.add("active-query-type");
-    } else {
-      span.classList.remove("active-query-type");
-    }
-  });
 }
 
 document.addEventListener("click", function (event) {
@@ -396,18 +254,6 @@ document.addEventListener("click", function (event) {
   }
 });
 
-function handleContentBoxDisplay(type = "show") {
-  if (type == "show") {
-    searchTextarea.value = prevCustomInput ? prevCustomInput : "";
-    handleShowContentBox();
-  } else {
-    searchTextarea.value = "";
-    contentBox.classList.remove("show-content-box");
-    contentBox.style.display = "none";
-    removeSelectedContent.style.display = "none";
-  }
-}
-
 function extractLinks(body) {
   const urlPattern = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/g;
   const matches = body.match(urlPattern);
@@ -422,6 +268,7 @@ function extractLinks(body) {
 }
 
 async function addNewMessage(customPrompt) {
+  let populatingSourcesLoading = false;
   sendBtn.innerHTML = `<img alt="pause" src="./assets/pause.svg" />`;
   const populatedSources = [];
   const LINKS = extractLinks(
@@ -453,7 +300,13 @@ async function addNewMessage(customPrompt) {
     );
     messagesContainer.appendChild(newMessageBox);
     prevCustomInput = searchTextarea.value;
-    handleContentBoxDisplay("hide");
+    handleContentBoxDisplay(
+      "hide",
+      searchTextarea,
+      prevCustomInput,
+      contentBox,
+      removeSelectedContent
+    );
     messagesContainer.scrollTo({
       top: newMessageBox.offsetTop - 70,
       behavior: "smooth",
@@ -501,8 +354,9 @@ User Context: ${
           let markedHTML = marked(replaceWithLink);
           resultsContainerObj.panel1.innerHTML = markedHTML;
           if (data.verdict && contentType.childNodes.length == 1) {
-            console.log("Verdict: ", data.verdict, contentType);
-            contentType.innerHTML += `<div class="final-fact-verdict ${data.verdict}">${
+            contentType.innerHTML += `<div class="final-fact-verdict ${
+              data.verdict
+            }">${
               data.verdict == "true"
                 ? "Fact is True"
                 : data.verdict == "false"
@@ -510,22 +364,18 @@ User Context: ${
                 : "Not Confirmed"
             }</div>`;
           }
-          if (
-            data.citations.length > 0 &&
-            resultsContainerObj.panel2.childNodes.length == 0
-          ) {
+          if (data.citations.length > 0 && !populatingSourcesLoading) {
+            populatingSourcesLoading = true;
+            console.log("============================================");
             resultsContainerObj.tab2.style.display = "block";
             resultsContainerObj.panel2.innerHTML += `<div class="loading-sources"><div class="loader"></div></div>`;
             resultsContainerObj.tab2.style.display = "block";
             data.citations.map(async (source, index) => {
-              if (index < 2) {
-                const populatedSource = await fetchSourceDetails(source);
-                resultsContainerObj.panel2.appendChild(
-                  createSourceBox(populatedSource)
-                );
-                populatedSources.push(populatedSource);
-              }
-              resultsContainerObj.panel2.innerHTML += `<a href="${source}">${source}</a>`;
+              const populatedSource = await fetchSourceDetails(source);
+              resultsContainerObj.panel2.appendChild(
+                createSourceBox(populatedSource)
+              );
+              populatedSources.push(populatedSource);
             });
             const loadingElem =
               resultsContainerObj.panel2.querySelector(".loading-sources");
@@ -555,7 +405,13 @@ User Context: ${
           );
           if (newChat != null) selectedChat = newChat;
           if (!newMessage) {
-            handleContentBoxDisplay("show");
+            handleContentBoxDisplay(
+              "show",
+              searchTextarea,
+              prevCustomInput,
+              contentBox,
+              removeSelectedContent
+            );
             alert("Oops! looks like something went wrong🤦‍♀️");
             return;
           }
@@ -587,6 +443,8 @@ User Context: ${
           });
 
           loadingAiResponse = false;
+          populatingSourcesLoading = false;
+          sendBtn.innerHTML = `<img alt="send" src="./assets/send.svg" />`;
         } catch (err) {
           console.warn("Error while completing the message process");
           console.error(err.message);
@@ -594,16 +452,16 @@ User Context: ${
       }
     );
   } catch (err) {
-    handleContentBoxDisplay("show");
+    handleContentBoxDisplay(
+      "show",
+      searchTextarea,
+      prevCustomInput,
+      contentBox,
+      removeSelectedContent
+    );
     console.log(err);
     alert("Oops! something went wrong");
   }
-}
-
-function handleShowContentBox() {
-  contentBox.style.display = "block";
-  removeSelectedContent.style.display = "block";
-  contentBox.classList.add("show-content-box");
 }
 
 async function updateContent() {
@@ -625,7 +483,7 @@ async function updateContent() {
       (response.contentType === "text" || response.contentType === "link") &&
       response.text
     ) {
-      handleShowContentBox();
+      handleShowContentBox(contentBox, removeSelectedContent);
       textElement.style.display = "block";
       newMessageDetails.selectedText = response.text;
       textElement.textContent = response.text;
@@ -649,7 +507,7 @@ async function updateContent() {
       }
     } else if (response.contentType === "image" && response.imageUrl) {
       newMessageDetails.actionType = response.actionType;
-      handleShowContentBox();
+      handleShowContentBox(contentBox, removeSelectedContent);
       imageContainer.style.display = "flex";
       let div = document.createElement("div");
       let imgTag = document.createElement("img");
@@ -662,72 +520,6 @@ async function updateContent() {
       UPLOADED_DOCUMENTS.push(secureURL);
     }
   });
-}
-
-async function fetchUserInfo(token) {
-  try {
-    const response = await fetch(
-      "https://www.googleapis.com/oauth2/v3/userinfo",
-      {
-        headers: {
-          Authorization: "Bearer " + token,
-        },
-      }
-    );
-    const userInfo = await response.json();
-    const dbUser = await verifyOrCreateUser(userInfo);
-
-    await chrome.storage.local.set({
-      loggedInUser: {
-        name: dbUser.data.name,
-        _id: dbUser.data._id,
-        email: dbUser.data.email,
-        lastLoggedInDate: new Date().toISOString(),
-      },
-    });
-
-    chrome.storage.local.get(["loggedInUser"], (result) => {
-      document.body.innerHTML = newChatLayout(result.loggedInUser);
-      return result.loggedInUser;
-    });
-  } catch (err) {
-    console.error("Failed to fetch user info:", err);
-    return null;
-  }
-}
-
-async function getUserInfo() {
-  try {
-    const result = await new Promise((resolve) =>
-      chrome.storage.local.get(["loggedInUser"], resolve)
-    );
-    const user = result.loggedInUser;
-    if (user && user._id && user.lastLoggedInDate) {
-      const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-      const now = new Date().getTime();
-      const lastLogin = new Date(user.lastLoggedInDate).getTime();
-      if (now - lastLogin < THIRTY_DAYS_MS) {
-        document.body.innerHTML = newChatLayout(user);
-        return user;
-      }
-    }
-    document.body.innerHTML = `<div class="login">
-      <h2>FactSnap Authentication</h2>
-      <p>Please Wait, while we verify you...</p>
-    </div>`;
-    const token = await new Promise((resolve, reject) => {
-      chrome.identity.getAuthToken({ interactive: true }, (token) => {
-        if (chrome.runtime.lastError || !token) {
-          return reject(chrome.runtime.lastError);
-        }
-        resolve(token);
-      });
-    });
-    return await fetchUserInfo(token);
-  } catch (error) {
-    console.error("Authentication failed:", error);
-    return null;
-  }
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -861,7 +653,10 @@ document.addEventListener("DOMContentLoaded", async () => {
               ${rawHTML}
             </div>
             <div class="tab-panel" data-tab="sources" style="display:none;">
-              ${message.sources.map(createSourceBox).join("")}
+              ${message.sources
+                .map(createSourceBox)
+                .map((el) => el.outerHTML)
+                .join("")}
             </div>
           </div>
         </div>
@@ -873,7 +668,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       newMessageDetails.actionType = "quick-search";
       newMessageDetails.selectedText = "";
-      handleContentBoxDisplay("hide");
+      handleContentBoxDisplay(
+        "hide",
+        searchTextarea,
+        prevCustomInput,
+        contentBox,
+        removeSelectedContent
+      );
 
       document.querySelectorAll("pre code").forEach((block) => {
         hljs.highlightElement(block);

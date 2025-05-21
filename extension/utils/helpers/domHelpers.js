@@ -1,146 +1,217 @@
-export function getReadableDomain(url) {
-  try {
-    const { hostname } = new URL(url);
-    const filteredHost = hostname
-      .replace(/^www\d*\./, "") // remove www, www1, etc.
-      .replace(/^m\./, "") // remove m. for mobile
-      .replace(/^en\./, ""); // optionally remove language subdomains
+import { generateRandomId } from "../utils.js";
 
-    // Split by . and - to separate words
-    const words = filteredHost
-      .split(/[.\-]/) // split by dot or dash
-      .filter(Boolean); // remove empty strings
+export function handleAdjustHeight(searchTextarea) {
+  searchTextarea.style.height = "50px";
+  const scrollHeight = searchTextarea.scrollHeight;
+  const newHeight = Math.min(Math.max(50, scrollHeight), 200);
+  searchTextarea.style.height = newHeight + "px";
+}
 
-    // Capitalize each word
-    const readableName = words[0].charAt(0).toUpperCase() + words[0].slice(1);
+export function handleMenuBarClick(sideNavbar) {
+  sideNavbar.classList.add("show-sidenav");
+}
 
-    return readableName;
-  } catch (e) {
-    return "Unknown Source";
+export function handleCloseMenuBarClick(sideNavbar) {
+  sideNavbar.classList.remove("show-sidenav");
+}
+
+export function handleRemoveSelectedContent(
+  contentBox,
+  removeSelectedContent,
+  newMessageDetails,
+  UPLOADED_DOCUMENTS,
+  imageContainer
+) {
+  newMessageDetails.selectedText = "";
+  UPLOADED_DOCUMENTS.length = 0;
+  contentBox.style.display = "none";
+  removeSelectedContent.style.display = "none";
+  imageContainer.inerHTML = "";
+  imageContainer.style.display = "none";
+}
+
+export function handleSettingsBtnClick(sideNavbar, settingsContainer) {
+  sideNavbar.classList.remove("show-sidenav");
+  settingsContainer.style.display = "flex";
+}
+
+export function handleSettingsContainerClick(settingsContainer) {
+  settingsContainer.style.display = "none";
+}
+
+export function updateToggle(element, status) {
+  element.innerText = status ? "ON" : "OFF";
+  element.classList.toggle("on", status);
+}
+
+export function handleContentBoxDisplay(
+  type,
+  searchTextarea,
+  prevCustomInput,
+  contentBox,
+  removeSelectedContent
+) {
+  if (type === "show") {
+    searchTextarea.value = prevCustomInput ? prevCustomInput : "";
+    handleShowContentBox(contentBox, removeSelectedContent);
+  } else {
+    searchTextarea.value = "";
+    contentBox.classList.remove("show-content-box");
+    contentBox.style.display = "none";
+    removeSelectedContent.style.display = "none";
   }
 }
 
-export async function fetchSourceDetails(url) {
-  const DEFAULT_IMAGE =
-    "https://static.vecteezy.com/system/resources/thumbnails/004/141/669/small/no-photo-or-blank-image-icon-loading-images-or-missing-image-mark-image-not-available-or-image-coming-soon-sign-simple-nature-silhouette-in-frame-isolated-illustration-vector.jpg";
-  try {
-    const res = await fetch(
-      `https://api.microlink.io/?url=${encodeURIComponent(url)}`
+export function handleShowContentBox(contentBox, removeSelectedContent) {
+  contentBox.style.display = "block";
+  removeSelectedContent.style.display = "block";
+  contentBox.classList.add("show-content-box");
+}
+
+export function removeListeners(
+  {
+    uploadFileBtn,
+    uploadFileInput,
+    queryTypes,
+    searchTextarea,
+    menuBar,
+    closeMenuBar,
+    sendBtn,
+    removeSelectedContent,
+    newChatBtn,
+    deepResearch,
+    quickSearch,
+    factCheck,
+    settingsBtn,
+    settingsContainer,
+    analyzeScreenBtn,
+  },
+  handlers
+) {
+  if (uploadFileBtn)
+    uploadFileBtn.removeEventListener("click", handlers.handleUploadFile);
+  if (uploadFileInput)
+    uploadFileInput.removeEventListener("change", handlers.handleUploadFile);
+  queryTypes.forEach((span) =>
+    span.removeEventListener("click", handlers.handleQueryTypeClick)
+  );
+  if (searchTextarea) {
+    searchTextarea.removeEventListener("input", handlers.handleAdjustHeight);
+    searchTextarea.removeEventListener("focus", handlers.handleAdjustHeight);
+  }
+  if (menuBar)
+    menuBar.removeEventListener("click", handlers.handleMenuBarClick);
+  if (closeMenuBar)
+    closeMenuBar.removeEventListener("click", handlers.handleCloseMenuBarClick);
+  if (sendBtn)
+    sendBtn.removeEventListener("click", handlers.handleSendBtnClick);
+  if (removeSelectedContent)
+    removeSelectedContent.removeEventListener(
+      "click",
+      handlers.handleRemoveSelectedContent
     );
-    let data = await res.json();
-    const sourceData = data.data;
-    return {
-      title: sourceData.title,
-      image: {
-        url: sourceData.image.url || DEFAULT_IMAGE,
-      },
-      description: sourceData.description,
-      url: url,
-      date: sourceData.date,
-      logo: {
-        url: sourceData.logo.url || DEFAULT_IMAGE,
-      },
-      publisher: sourceData.publisher,
-    };
-  } catch (err) {
-    console.warn("Cannot retrieve source details");
-    return {
-      title: "",
-      image: {
-        url: "https://static.vecteezy.com/system/resources/thumbnails/004/141/669/small/no-photo-or-blank-image-icon-loading-images-or-missing-image-mark-image-not-available-or-image-coming-soon-sign-simple-nature-silhouette-in-frame-isolated-illustration-vector.jpg",
-      },
-      description: "",
-      url: url,
-      date: new Date().toISOString(),
-      logo: {
-        url: "https://static.vecteezy.com/system/resources/thumbnails/004/141/669/small/no-photo-or-blank-image-icon-loading-images-or-missing-image-mark-image-not-available-or-image-coming-soon-sign-simple-nature-silhouette-in-frame-isolated-illustration-vector.jpg",
-      },
-      publisher: getReadableDomain(url),
-    };
-  }
+  if (newChatBtn)
+    newChatBtn.removeEventListener("click", handlers.handleNewChatBtnClick);
+  if (deepResearch)
+    deepResearch.removeEventListener("click", handlers.handleDeepResearchClick);
+  if (quickSearch)
+    quickSearch.removeEventListener("click", handlers.handleQuickSearchClick);
+  if (factCheck)
+    factCheck.removeEventListener("click", handlers.handleFactCheckClick);
+  if (settingsBtn)
+    settingsBtn.removeEventListener("click", handlers.handleSettingsBtnClick);
+  if (settingsContainer)
+    settingsContainer.removeEventListener(
+      "click",
+      handlers.handleSettingsContainerClick
+    );
+  if (analyzeScreenBtn)
+    analyzeScreenBtn.removeEventListener("click", handlers.analyzeScreen);
 }
 
-export async function formatAiResponse(response) {
-  const thinking = response
-    .slice(response.indexOf("<think>") + 7, response.lastIndexOf("</think>"))
-    .trim()
-    .split("\n")
-    .filter((pera) => pera != "")
-    .map((pera) => "> " + pera)
-    .join("\n\n");
-  let mainBody = JSON.parse(response.slice(response.indexOf("</think>") + 9));
-  const sources = mainBody[1].sources;
-  const tasks = mainBody[2].tasks;
-  const followUps = mainBody[3].followUp;
+export function addListeners(
+  {
+    uploadFileBtn,
+    uploadFileInput,
+    queryTypes,
+    searchTextarea,
+    menuBar,
+    closeMenuBar,
+    sendBtn,
+    removeSelectedContent,
+    newChatBtn,
+    deepResearch,
+    quickSearch,
+    factCheck,
+    settingsBtn,
+    settingsContainer,
+    analyzeScreenBtn,
+  },
+  handlers
+) {
+  if (uploadFileBtn)
+    uploadFileBtn.addEventListener("click", handlers.openDailogBox);
+  if (uploadFileInput)
+    uploadFileInput.addEventListener("change", handlers.handleUploadFile);
+  if (analyzeScreenBtn)
+    analyzeScreenBtn.addEventListener("click", handlers.analyzeScreen);
 
-  const formatted = replaceWithClickableLink(mainBody[0], sources);
+  queryTypes.forEach((span) => {
+    span.addEventListener("click", handlers.handleQueryTypeClick);
+  });
 
-  const detailedSources = [],
-    images = [];
-  for (let i = 0; i < sources.length; i++) {
-    let fetchLinkDetails;
-    try {
-      // fetchLinkDetails = await fetchSourceDetails(sources[i].url);
-      fetchLinkDetails = {
-        title: "",
-        image: {
-          url: "https://static.vecteezy.com/system/resources/thumbnails/004/141/669/small/no-photo-or-blank-image-icon-loading-images-or-missing-image-mark-image-not-available-or-image-coming-soon-sign-simple-nature-silhouette-in-frame-isolated-illustration-vector.jpg",
-        },
-        description: "",
-        url: sources[i].url,
-        date: sources[i].date,
-        logo: {
-          url: "https://static.vecteezy.com/system/resources/thumbnails/004/141/669/small/no-photo-or-blank-image-icon-loading-images-or-missing-image-mark-image-not-available-or-image-coming-soon-sign-simple-nature-silhouette-in-frame-isolated-illustration-vector.jpg",
-        },
-        publisher: getReadableDomain(sources[i].url),
-      };
-    } catch (err) {
-      fetchLinkDetails = {
-        title: "",
-        image: {
-          url: "https://static.vecteezy.com/system/resources/thumbnails/004/141/669/small/no-photo-or-blank-image-icon-loading-images-or-missing-image-mark-image-not-available-or-image-coming-soon-sign-simple-nature-silhouette-in-frame-isolated-illustration-vector.jpg",
-        },
-        description: "",
-        url: sources[i].url,
-        date: sources[i].date,
-        logo: {
-          url: "https://static.vecteezy.com/system/resources/thumbnails/004/141/669/small/no-photo-or-blank-image-icon-loading-images-or-missing-image-mark-image-not-available-or-image-coming-soon-sign-simple-nature-silhouette-in-frame-isolated-illustration-vector.jpg",
-        },
-        publisher: getReadableDomain(sources[i].url),
-      };
+  if (searchTextarea) {
+    searchTextarea.addEventListener("input", handlers.handleAdjustHeight);
+    searchTextarea.addEventListener("focus", handlers.handleAdjustHeight);
+  }
+  if (menuBar) menuBar.addEventListener("click", handlers.handleMenuBarClick);
+  if (closeMenuBar)
+    closeMenuBar.addEventListener("click", handlers.handleCloseMenuBarClick);
+  if (sendBtn) sendBtn.addEventListener("click", handlers.handleSendBtnClick);
+  if (removeSelectedContent)
+    removeSelectedContent.addEventListener(
+      "click",
+      handlers.handleRemoveSelectedContent
+    );
+  if (newChatBtn)
+    newChatBtn.addEventListener("click", handlers.handleNewChatBtnClick);
+  if (deepResearch)
+    deepResearch.addEventListener("click", handlers.handleDeepResearchClick);
+  if (quickSearch)
+    quickSearch.addEventListener("click", handlers.handleQuickSearchClick);
+  if (factCheck)
+    factCheck.addEventListener("click", handlers.handleFactCheckClick);
+  if (settingsBtn)
+    settingsBtn.addEventListener("click", handlers.handleSettingsBtnClick);
+  if (settingsContainer)
+    settingsContainer.addEventListener(
+      "click",
+      handlers.handleSettingsContainerClick
+    );
+}
+
+export function handleQueryTypeClick(e, queryTypes, newMessageDetails) {
+  if (e.target.tagName === "SPAN" && !e.target.dataset.name == "upload-file") {
+    queryTypes.forEach((s) => s.classList.remove("active-query-type"));
+    newMessageDetails.actionType = e.target.dataset.name;
+    e.target.classList.add("active-query-type");
+  } else if (e.target.tagName === "IMG") {
+    const parent = e.target.closest("span");
+    if (parent.dataset.name == "upload-file") return;
+    queryTypes.forEach((s) => s.classList.remove("active-query-type"));
+    newMessageDetails.actionType = parent.dataset.name;
+    if (parent) {
+      parent.classList.add("active-query-type");
     }
-
-    images.push(fetchLinkDetails.image.url);
-    detailedSources.push({
-      title: fetchLinkDetails.title,
-      image: fetchLinkDetails.image.url,
-      description: fetchLinkDetails.description,
-      url: fetchLinkDetails.url,
-      date: fetchLinkDetails.date,
-      fevicon: fetchLinkDetails.logo.url,
-      publisher: fetchLinkDetails.publisher,
-    });
   }
-
-  return {
-    thinking,
-    markdown: formatted,
-    tasks,
-    sources: detailedSources,
-    followUps,
-    images,
-  };
 }
 
-export function replaceWithClickableLink(body, sources) {
-  // console.log(sources);
-  return body.replace(/\[(\d+)\]/g, (match, num) => {
-    const index = parseInt(num, 10);
-    const source = sources[index - 1];
-    if (source) {
-      return `[${match}](${source})`;
+export function handleSelectedActionType(queryTypes, response) {
+  queryTypes.forEach((span) => {
+    if (span.dataset.name === response.actionType) {
+      span.classList.add("active-query-type");
     } else {
-      return match;
+      span.classList.remove("active-query-type");
     }
   });
 }
@@ -193,23 +264,12 @@ export function createSourceBox(fetchLinkDetails) {
   return sourceBox;
 }
 
-export function generateRandomId() {
-  const chars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let id = "";
-  for (let i = 0; i < 16; i++) {
-    id += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return id;
-}
-
 export function createContentBox(
   customPrompt,
   newMessageDetails,
   resultsContainerObj,
   UPLOADED_DOCUMENTS
 ) {
-  console.log("This is the final stage: newMessageDetails", newMessageDetails);
   const randomId = generateRandomId();
   const mainBox = document.createElement("div");
   mainBox.className = "new-message";
@@ -235,24 +295,18 @@ export function createContentBox(
     capitalize(actionTagArr[0]) + " " + capitalize(actionTagArr[1]);
 
   contentType.appendChild(actionTag);
-  console.log(newMessageDetails);
   if (newMessageDetails.actionType !== "user-query") {
-    console.log("passed and success-----------");
     contentBox.appendChild(contentType);
   }
 
-  // Custom prompt paragraph
   const prompt = document.createElement("p");
   prompt.className = "custom-prompt";
   prompt.textContent = customPrompt;
   contentBox.appendChild(prompt);
 
-  // Content container
   const contentContainer = document.createElement("div");
   contentContainer.className = "content-container";
-  console.log({ UPLOADED_DOCUMENTS });
   if (newMessageDetails.selectedText) {
-    console.log("newMessageDetails.selectedText");
     const selectedText = document.createElement("div");
     selectedText.className = "selected-text";
     selectedText.innerText = newMessageDetails.selectedText;
@@ -260,12 +314,8 @@ export function createContentBox(
   }
 
   contentBox.appendChild(contentContainer);
-
-  // Results container
   const resultsContainer = document.createElement("div");
   resultsContainer.className = "results-container markdown-body";
-
-  // Tabs
   const resultTabs = document.createElement("div");
   resultTabs.className = "result-tabs";
 
@@ -281,8 +331,6 @@ export function createContentBox(
   tab2.style.display = "none";
 
   resultTabs.appendChild(tab1);
-
-  // Content panels
   const resultsContent = document.createElement("div");
   resultsContent.className = "results-content";
 
@@ -291,8 +339,8 @@ export function createContentBox(
   panel1.dataset.tab = "answer";
   panel1.textContent = newMessageDetails.actionType.startsWith("Deep")
     ? "Deep research may take 3 to 5 minutes..."
-    : "Generating response..."; // default content
-  panel1.style.display = "block"; // only this is visible initially
+    : "Generating response...";
+  panel1.style.display = "block";
 
   const panel2 = document.createElement("div");
   panel2.className = "tab-panel";
@@ -308,12 +356,10 @@ export function createContentBox(
   mainBox.appendChild(contentBox);
 
   if (UPLOADED_DOCUMENTS.length > 0) {
-    console.log("entered inside the uploaded_documents");
     const tab3 = document.createElement("span");
     tab3.className = "tab";
     tab3.textContent = "Attachments";
     tab3.dataset.tab = "attachments";
-    // tab3.style.display = "none";
     resultTabs.appendChild(tab3);
 
     const panel3 = document.createElement("div");
@@ -327,10 +373,7 @@ export function createContentBox(
     });
     panel3.style.display = "none";
     resultsContent.appendChild(panel3);
-
-    console.log({ tab3, panel3 });
   }
-  // append sources after attachments
   resultTabs.appendChild(tab2);
   resultsContainerObj.tab1 = tab1;
   resultsContainerObj.tab2 = tab2;
@@ -442,66 +485,4 @@ export function newChatLayout(userInfo) {
       </div>
     </div>
     `;
-}
-
-export async function uploadToCloudinary(base64Data, options = {}) {
-  const {
-    cloudName = "dvk80x6fi",
-    uploadPreset = "factsnap",
-    folder = "",
-    resourceType = "auto",
-  } = options;
-
-  if (!cloudName) throw new Error("cloudName is required");
-  if (!uploadPreset) throw new Error("uploadPreset is required");
-  if (!base64Data) throw new Error("base64Data is required");
-
-  const base64Content = base64Data.split(",")[1];
-
-  // Prepare the form data
-  const formData = new FormData();
-  formData.append("file", base64Data);
-  formData.append("upload_preset", uploadPreset);
-
-  if (folder) {
-    formData.append("folder", folder);
-  }
-
-  // Make the API request to Cloudinary
-  try {
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        `Cloudinary upload failed: ${
-          errorData.error?.message || "Unknown error"
-        }`
-      );
-    }
-
-    const data = await response.json();
-
-    return {
-      secureURL: data.secure_url,
-    };
-  } catch (error) {
-    console.error("Error uploading to Cloudinary:", error);
-    throw error;
-  }
-}
-
-export function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = (error) => reject(error);
-  });
 }
