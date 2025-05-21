@@ -1,8 +1,5 @@
-import { response } from "express";
-import CustomError from "../../utils/customError";
-import formatAiResponse from "../../utils/formatAiResponse";
-import ChatService from "./chatService";
 import dotenv from "dotenv";
+import ChatService from "./chatService";
 dotenv.config();
 
 const SYSTEM_PROMPT = `**ALAWAYS RETURN RESPONSE IN MARKDOWN FORMAT USING HEADINGS, BULLET POINTS, TABLES, HIGHLIGHTING, ETC**.
@@ -63,7 +60,7 @@ class AIService {
           ],
           stream: true,
           temperature: 0.7,
-          max_tokens: 4096, // Ensure sufficient tokens for complete responses
+          max_tokens: 4000,
         }),
       });
 
@@ -86,48 +83,17 @@ class AIService {
       try {
         while (true) {
           const { value, done } = await reader.read();
-
-          // if (done) {
-          //   // Process any remaining data in buffer
-          //   if (buffer.trim()) {
-          //     const lines = buffer.split("\n").filter(line => line.trim().startsWith("data: "));
-          //     for (const line of lines) {
-          //       const jsonString = line.replace("data: ", "").trim();
-          //       if (jsonString && jsonString !== "[DONE]") {
-          //         try {
-          //           const data = JSON.parse(jsonString);
-          //           const content = data?.choices?.[0]?.delta?.content || data?.choices?.[0]?.message?.content;
-          //           if (content) {
-          //             yield `data: ${JSON.stringify({
-          //               choices: [{ delta: { content: content } }],
-          //             })}\n\n`;
-          //           }
-          //         } catch (err) {
-          //           console.warn("Failed to parse final buffer chunk:", jsonString);
-          //         }
-          //       }
-          //     }
-          //   }
-          //   yield `data: [DONE]\n\n`;
-          //   break;
-          // }
-
           // Decode the chunk and add to buffer
           const text = decoder.decode(value, { stream: true });
           buffer += text;
 
           // Process complete lines
           const lines = buffer.split("\n");
-          buffer = lines.pop() || ""; // Keep the last potentially incomplete line
+          buffer = lines.pop() || "";
 
           for (const line of lines) {
             if (line.trim().startsWith("data: ")) {
               const jsonString = line.replace("data: ", "").trim();
-
-              // if (jsonString === "[DONE]") {
-              //   yield `data: [DONE]\n\n`;
-              //   return;
-              // }
 
               if (!jsonString) continue;
 

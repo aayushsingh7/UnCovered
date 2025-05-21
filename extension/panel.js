@@ -1,27 +1,22 @@
 import { marked } from "./libs/marked.esm.js";
 import {
+  addNewMessageToDB,
+  fetchAIResponse,
+  fetchAllChats,
+  fetchMessages,
+  verifyOrCreateUser,
+} from "./utils/api.js";
+import {
   createContentBox,
   createSourceBox,
   fetchSourceDetails,
   fileToBase64,
-  formatAiResponse,
-  generateRandomId,
   getReadableDomain,
   newChatLayout,
   replaceWithClickableLink,
   uploadToCloudinary,
 } from "./utils/helpers.js";
-import {
-  addNewMessageToDB,
-  fetchAIResponse,
-  fetchAllChats,
-  fetchChat,
-  fetchMessages,
-  searchChat,
-  verifyOrCreateUser,
-} from "./utils/api.js";
 
-// Declare variables outside the function
 let textElement,
   imageContainer,
   imageElement,
@@ -34,7 +29,7 @@ let textElement,
   closeMenuBar,
   searchBox,
   searchTextarea,
-  removeSelectedText,
+  removeSelectedContent,
   settingsBtn,
   settingsContainer,
   deepResearch,
@@ -72,7 +67,6 @@ let resultsContainerObj = {
 
 let CHAT_HISTORY = [];
 let UPLOADED_DOCUMENTS = [];
-// let LINKS = [];
 
 marked.setOptions({
   highlight: function (code, lang) {
@@ -137,14 +131,17 @@ function handleCloseMenuBarClick() {
 }
 
 function handleSendBtnClick(e) {
-  addNewMessage(searchTextarea.value);
-  searchTextarea.style.height = "50px";
+  if (!loadingAiResponse) {
+    addNewMessage(searchTextarea.value);
+    searchTextarea.style.height = "50px";
+  }
 }
 
-function handleRemoveSelectedTextClick() {
+function handleRemoveSelectedContent() {
   newMessageDetails.selectedText = "";
+  UPLOADED_DOCUMENTS = [];
   contentBox.style.display = "none";
-  removeSelectedText.style.display = "none";
+  removeSelectedContent.style.display = "none";
 }
 
 function handleNewChatBtnClick() {
@@ -159,10 +156,12 @@ function handleNewChatBtnClick() {
   `;
   refreshElements();
   newMessageDetails.actionType = "quick-search";
-  newMessageDetails.selectedText = "";
+  handleRemoveSelectedContent();
+  // newMessageDetails.selectedText = "";
+  // UPLOADED_DOCUMENTS = [];
   searchTextarea.value = "";
-  contentBox.style.display = "none";
-  removeSelectedText.style.display = "none";
+  // contentBox.style.display = "none";
+  // removeSelectedContent.style.display = "none";
   selectedChat = {};
   handleSelectedActionType(queryTypes, { actionType: "quick-search" });
 }
@@ -203,9 +202,7 @@ function handleSettingsContainerClick() {
 async function analyzeScreen() {
   chrome.runtime.sendMessage({ action: "captureScreen" }, async (response) => {
     if (response && response.screenshotUrl) {
-      contentBox.style.display = "block";
-      removeSelectedText.style.display = "block";
-      contentBox.classList.add("show-content-box");
+      handleShowContentBox();
       imageContainer.style.display = "flex";
       newMessageDetails.selectedText = "";
       textElement.style.display = "none";
@@ -228,12 +225,7 @@ async function openDailogBox() {
 }
 
 async function handleUploadFile(e) {
-  console.log("hello world start");
-  // uploadFileInput.addEventListener("change", async (e) => {
-  console.log("hello world");
-  contentBox.style.display = "block";
-  removeSelectedText.style.display = "block";
-  contentBox.classList.add("show-content-box");
+  handleShowContentBox();
   imageContainer.style.display = "flex";
   newMessageDetails.selectedText = "";
   textElement.style.display = "none";
@@ -241,7 +233,6 @@ async function handleUploadFile(e) {
   const extension = e.target.files[0].name.slice(
     e.target.files[0].name.lastIndexOf(".")
   );
-  console.log({ extension });
   if (
     extension == ".PNG" ||
     extension == ".JPG" ||
@@ -260,7 +251,6 @@ async function handleUploadFile(e) {
   } else {
     alert("Only images upload are supported for now");
   }
-  // });
 }
 
 function refreshElements() {
@@ -276,7 +266,7 @@ function refreshElements() {
   closeMenuBar = document.getElementById("close-btn");
   searchBox = document.getElementById("search-box");
   searchTextarea = document.getElementById("search-input") || null;
-  removeSelectedText = document.getElementById("remove-selected-text");
+  removeSelectedContent = document.getElementById("remove-selected-text");
   settingsBtn = document.getElementById("settings-btn");
   settingsContainer = document.getElementById("settings-contanier");
   deepResearch = document.getElementById("deep-research");
@@ -309,10 +299,10 @@ function refreshElements() {
     if (closeMenuBar)
       closeMenuBar.removeEventListener("click", handleCloseMenuBarClick);
     if (sendBtn) sendBtn.removeEventListener("click", handleSendBtnClick);
-    if (removeSelectedText)
-      removeSelectedText.removeEventListener(
+    if (removeSelectedContent)
+      removeSelectedContent.removeEventListener(
         "click",
-        handleRemoveSelectedTextClick
+        handleRemoveSelectedContent
       );
     if (newChatBtn)
       newChatBtn.removeEventListener("click", handleNewChatBtnClick);
@@ -351,10 +341,10 @@ function refreshElements() {
     if (closeMenuBar)
       closeMenuBar.addEventListener("click", handleCloseMenuBarClick);
     if (sendBtn) sendBtn.addEventListener("click", handleSendBtnClick);
-    if (removeSelectedText)
-      removeSelectedText.addEventListener(
+    if (removeSelectedContent)
+      removeSelectedContent.addEventListener(
         "click",
-        handleRemoveSelectedTextClick
+        handleRemoveSelectedContent
       );
     if (newChatBtn) newChatBtn.addEventListener("click", handleNewChatBtnClick);
     if (deepResearch)
@@ -409,14 +399,12 @@ document.addEventListener("click", function (event) {
 function handleContentBoxDisplay(type = "show") {
   if (type == "show") {
     searchTextarea.value = prevCustomInput ? prevCustomInput : "";
-    contentBox.classList.add("show-content-box");
-    contentBox.style.display = "block";
-    removeSelectedText.style.display = "block";
+    handleShowContentBox();
   } else {
     searchTextarea.value = "";
     contentBox.classList.remove("show-content-box");
     contentBox.style.display = "none";
-    removeSelectedText.style.display = "none";
+    removeSelectedContent.style.display = "none";
   }
 }
 
@@ -431,38 +419,6 @@ function extractLinks(body) {
   });
 
   return [...new Set(cleanedLinks)];
-}
-
-function generatePromptContent(customPrompt, LINKS) {
-  const queryTypePrompt = customPrompt?.trim()
-    ? customPrompt
-    : newMessageDetails.actionType.startsWith("fact-check")
-    ? "Please verify the accuracy of this claim. Start with a short conclusion, then present supporting evidence and counterpoints."
-    : newMessageDetails.actionType.startsWith("deep-research")
-    ? "Please provide a comprehensive analysis of this topic. Start with a short summary, followed by structured insights."
-    : "Please provide a clear and concise answer to the question. Give comprehensive details if required";
-
-  // Build source sections
-  const contextText = newMessageDetails.selectedText || "Text: Not provided";
-
-  const imageSection =
-    UPLOADED_DOCUMENTS.length > 0
-      ? `Images:\n${UPLOADED_DOCUMENTS.map(
-          (link, i) => `${i + 1}. ${link}`
-        ).join("\n")}`
-      : "Images: Not provided";
-
-  const linkSection =
-    LINKS.length > 0
-      ? `Links:\n${LINKS.map((link, i) => `${i + 1}. ${link}`).join("\n")}`
-      : "Links: Not provided";
-
-  return {
-    queryTypePrompt,
-    contextText,
-    imageSection,
-    linkSection,
-  };
 }
 
 async function addNewMessage(customPrompt) {
@@ -527,7 +483,7 @@ User Context: ${
 
     CHAT_HISTORY.push(USER_MESSAGE);
 
-    const { newMessage } = await fetchAIResponse(
+    const response = await fetchAIResponse(
       userDetails._id,
       selectedChat.chatID,
       newMessageDetails.selectedText,
@@ -544,10 +500,9 @@ User Context: ${
           );
           let markedHTML = marked(replaceWithLink);
           resultsContainerObj.panel1.innerHTML = markedHTML;
-          if (data.verdict) {
-            contentType.innerHTML += `<div class='final-fact-verdict ${
-              data.verdict
-            }>${
+          if (data.verdict && contentType.childNodes.length == 1) {
+            console.log("Verdict: ", data.verdict, contentType);
+            contentType.innerHTML += `<div class="final-fact-verdict ${data.verdict}">${
               data.verdict == "true"
                 ? "Fact is True"
                 : data.verdict == "false"
@@ -560,21 +515,17 @@ User Context: ${
             resultsContainerObj.panel2.childNodes.length == 0
           ) {
             resultsContainerObj.tab2.style.display = "block";
-            let loading = document.createElement("div");
-            loading.className = "loading-sources";
-            loading.innerHTML = `<div class="loader"></div>`;
-            resultsContainerObj.panel2.appendChild(loading);
+            resultsContainerObj.panel2.innerHTML += `<div class="loading-sources"><div class="loader"></div></div>`;
             resultsContainerObj.tab2.style.display = "block";
             data.citations.map(async (source, index) => {
-              // if (index < 2) {
-              //   const populatedSource = await fetchSourceDetails(source);
-              //   resultsContainerObj.panel2.appendChild(
-              //     createSourceBox(populatedSource)
-              //   );
-              //   populatedSources.push(populatedSource);
-              // } else {
+              if (index < 2) {
+                const populatedSource = await fetchSourceDetails(source);
+                resultsContainerObj.panel2.appendChild(
+                  createSourceBox(populatedSource)
+                );
+                populatedSources.push(populatedSource);
+              }
               resultsContainerObj.panel2.innerHTML += `<a href="${source}">${source}</a>`;
-              // }
             });
             const loadingElem =
               resultsContainerObj.panel2.querySelector(".loading-sources");
@@ -612,7 +563,7 @@ User Context: ${
           const { responseRawJSON } = newMessage;
           const ASSISTANT_MESSAGE = {
             role: "assistant",
-            content: `Answer: ${rawJSON}`,
+            content: `Answer: ${responseRawJSON}`,
           };
           CHAT_HISTORY.push(ASSISTANT_MESSAGE);
 
@@ -649,64 +600,15 @@ User Context: ${
   }
 }
 
-// function updateContent() {
-//   if (!userDetails.email) return;
-//   textElement.style.display = "none";
-//   // imageContainer.style.display = "none";
-//   noContentElement.style.display = "none";
-
-//   chrome.runtime.sendMessage({ action: "getContent" }, (response) => {
-//     if (chrome.runtime.lastError) {
-//       noContentElement.style.display = "block";
-//       noContentElement.textContent = "Error retrieving content.";
-//       return;
-//     }
-
-//     if (!response.contentType) return;
-
-//     if (response.contentType === "text" && response.text) {
-//       contentBox.style.display = "block";
-//       removeSelectedText.style.display = "block";
-//       contentBox.classList.add("show-content-box");
-//       textElement.style.display = "block";
-//       newMessageDetails.selectedText = response.text;
-//       textElement.textContent = response.text;
-//       handleSelectedActionType(queryTypes, response);
-
-//       if (response.actionType === "deep-research") {
-//         newMessageDetails.actionType = "deep-research";
-//         if (deepResearchStatus) addNewMessage();
-//       } else if (response.actionType === "fact-check") {
-//         newMessageDetails.actionType = "fact-check";
-//         if (factCheckStatus) addNewMessage();
-//       } else {
-//         newMessageDetails.actionType = "quick-search";
-//         if (quickSearchStatus) addNewMessage();
-//       }
-//     } else if (response.contentType === "image" && response.imageUrl) {
-//       contentBox.style.display = "block";
-//       removeSelectedText.style.display = "block";
-//       contentBox.classList.add("show-content-box");
-//       imageContainer.style.display = "flex";
-//       imageElement.src = response.imageUrl;
-//       actionTagElement.textContent = "Image Analysis";
-//       actionTagElement.className = "action-tag image";
-//       newMessageDetails.actionType = "Image Analysis";
-//     } else {
-//       // noContentElement.style.display = "block";
-//       // noContentElement.textContent =
-//       //   "No content selected. Please select text or an image on a webpage, right-click, and choose a FactSnap option.";
-//       // actionTagElement.textContent = "No Action";
-//       // actionTagElement.className = "action-tag";
-//       // newMessageDetails.actionType = "No Action";
-//     }
-//   });
-// }
+function handleShowContentBox() {
+  contentBox.style.display = "block";
+  removeSelectedContent.style.display = "block";
+  contentBox.classList.add("show-content-box");
+}
 
 async function updateContent() {
   if (!userDetails.email) return;
   textElement.style.display = "none";
-  // imageContainer.style.display = "none";
   noContentElement.style.display = "none";
 
   chrome.runtime.sendMessage({ action: "getContent" }, async (response) => {
@@ -716,39 +618,24 @@ async function updateContent() {
       return;
     }
 
-    console.log(
-      "========================================================================",
-      { response }
-    );
     if (!response.contentType) return;
     handleSelectedActionType(queryTypes, response);
 
-    // Handle both text selections and links (which are stored in text field)
     if (
       (response.contentType === "text" || response.contentType === "link") &&
       response.text
     ) {
-      contentBox.style.display = "block";
-      removeSelectedText.style.display = "block";
-      contentBox.classList.add("show-content-box");
+      handleShowContentBox();
       textElement.style.display = "block";
       newMessageDetails.selectedText = response.text;
       textElement.textContent = response.text;
 
-      // For links, you might want to add special styling or indication
       if (response.contentType === "link") {
         textElement.classList.add("link-content");
-        // Optional: add a visual indicator that this is a link
         textElement.textContent = `Link: ${response.text}`;
       } else {
         textElement.classList.remove("link-content");
       }
-
-      console.log(
-        "===========================================",
-        { response },
-        "============================================="
-      );
 
       if (response.actionType === "deep-research") {
         newMessageDetails.actionType = "deep-research";
@@ -762,9 +649,7 @@ async function updateContent() {
       }
     } else if (response.contentType === "image" && response.imageUrl) {
       newMessageDetails.actionType = response.actionType;
-      contentBox.style.display = "block";
-      removeSelectedText.style.display = "block";
-      contentBox.classList.add("show-content-box");
+      handleShowContentBox();
       imageContainer.style.display = "flex";
       let div = document.createElement("div");
       let imgTag = document.createElement("img");
@@ -775,18 +660,6 @@ async function updateContent() {
       const { secureURL } = await uploadToCloudinary(response.imageUrl);
       imgTag.src = secureURL;
       UPLOADED_DOCUMENTS.push(secureURL);
-
-      // imageElement.src = response.imageUrl;
-      // actionTagElement.textContent = "Image Analysis";
-      // actionTagElement.className = "action-tag image";
-      // newMessageDetails.actionType = "Image Analysis";
-    } else {
-      // noContentElement.style.display = "block";
-      // noContentElement.textContent =
-      //   "No content selected. Please select text or an image on a webpage, right-click, and choose a FactSnap option.";
-      // actionTagElement.textContent = "No Action";
-      // actionTagElement.className = "action-tag";
-      // newMessageDetails.actionType = "No Action";
     }
   });
 }
@@ -988,7 +861,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               ${rawHTML}
             </div>
             <div class="tab-panel" data-tab="sources" style="display:none;">
-              ${message.sources.map(renderSourceBox).join("")}
+              ${message.sources.map(createSourceBox).join("")}
             </div>
           </div>
         </div>
