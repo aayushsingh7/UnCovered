@@ -95,9 +95,9 @@ marked.setOptions({
 
 function handleSendBtnClick(e) {
   if (
-    !loadingAiResponse ||
-    newMessageDetails.selectedText ||
-    UPLOADED_DOCUMENTS.length > 0
+    (!loadingAiResponse && newMessageDetails.selectedText.trim()) ||
+    (!loadingAiResponse && UPLOADED_DOCUMENTS.length > 0) ||
+    (!loadingAiResponse && searchTextarea.value.trim())
   ) {
     addNewMessage(searchTextarea.value);
     searchTextarea.style.height = "50px";
@@ -342,7 +342,7 @@ async function addNewMessage(customPrompt) {
       removeSelectedContent
     );
     messagesContainer.scrollTo({
-      top: newMessageBox.offsetTop - 70,
+      top: newMessageBox.offsetTop - 80,
       behavior: "smooth",
     });
 

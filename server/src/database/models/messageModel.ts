@@ -43,7 +43,4 @@ MessageSchema.index({ plainAnswer: "text" });
 MessageSchema.index({ sender: 1 });
 
 const Message = model("Messages", MessageSchema);
-// Message.collection.dropIndex("chatID_1_createdAt_1_answer_text");
-// Message.collection.dropIndex("chatID_1_createdAt_1");
-// Message.collection.dropIndex("chatID_1_sender_1");
 export default Message;

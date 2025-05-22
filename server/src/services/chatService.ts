@@ -52,7 +52,7 @@ class ChatService {
     }
   }
 
-  public async searchChat(query: string, userID: string) {
+  public async searchChatsAndMessages(query: string, userID: string) {
     try {
       const chats = await this.chat.find({
         user: userID,

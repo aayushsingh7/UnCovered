@@ -308,9 +308,13 @@ export async function searchChatsAndMessages(
     const data = await response.json();
     const { chats, messages } = data.data;
     chatsContainer.innerHTML = "";
-    chats.forEach((chat) => {
+    if(chats.length == 0) {
+         chatsContainer.innerHTML = `<div class="no-chats-found"><img src="./assets/no-chats.svg" alt="no chat"/> <h4>No Results Found</h4></div>`
+    }else{
+      chats.forEach((chat) => {
       chatsContainer.appendChild(createChatBox(chat));
     });
+    }
   } catch (err) {
     console.error(err);
     chatsContainer.innerHTML =

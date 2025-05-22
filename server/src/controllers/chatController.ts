@@ -35,9 +35,9 @@ class ChatController {
       res.status(err.statusCode).send({ success: false, message: err.message });
     }
   }
-  public async searchChat(req: Request, res: Response) {
+  public async searchChatsAndMessages(req: Request, res: Response) {
     try {
-      const searchResults = await this.chatService.searchChat(
+      const searchResults = await this.chatService.searchChatsAndMessages(
         `${req.query.searchQuery}`,
         `${req.query.userID}`
       );

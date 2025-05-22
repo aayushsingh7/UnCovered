@@ -420,11 +420,12 @@ export function newChatLayout(userInfo) {
       <nav>
         <img src="./assets/menu.svg" alt="" id="menu" />
         <h3>FactSnap</h3>
-        <img src="./assets/new-chat.svg" alt="" id="new-chat" />
+        <div>
+        <img src="./assets/capture-ss.svg" title="Capture Screen" alt="ss" id="captureBtn" />
+        <img src="./assets/new-chat.svg" title="New Chat" alt="" id="new-chat" />
+        </div>
       </nav>
     </header>
-
-     <button id="captureBtn">Capture Screenshot</button>
 
     <div class="settings-contanier" id="settings-contanier"">
       <div class="settings-box">
@@ -449,7 +450,7 @@ export function newChatLayout(userInfo) {
 
             <div>
               <h4>Quick Search</h4>
-              <button id="quick-search-settings-btn">ON</button>
+              <button id="quick-search-settings-btn">OFF</button>
             </div>
           </div>
         </div>
@@ -596,11 +597,15 @@ function renderMessages(messages) {
 export async function renderChats(chatsContainer, userDetails, chatsMap) {
   chatsContainer.innerHTML += `<div class="loading-sources"><div class="loader"></div></div>`;
   let chats = await fetchAllChats(userDetails._id);
-  chatsContainer.innerHTML = ""
-  chats.map((chat) => {
-    chatsMap.set(chat.chatID, chat);
-    chatsContainer.appendChild(createChatBox(chat));
-  });
+  chatsContainer.innerHTML = "";
+  if (chats.length == 0) {
+    chatsContainer.innerHTML = `<div class="no-chats-found"><img src="./assets/no-chats.svg" alt="no chat"/> <h4>No Chats Found</h4></div>`;
+  } else {
+    chats.map((chat) => {
+      chatsMap.set(chat.chatID, chat);
+      chatsContainer.appendChild(createChatBox(chat));
+    });
+  }
 }
 
 export async function handleChatBoxClick(
@@ -635,7 +640,7 @@ export async function handleChatBoxClick(
   selectedChat = chat;
   highlightSelectedChat(chatID, chatsContainer);
   const messages = await fetchMessages(chatID);
-  messagesContainer.innerHTML = ""
+  messagesContainer.innerHTML = "";
   messagesContainer.innerHTML = renderMessages(messages);
   messagesContainer.querySelectorAll("pre code").forEach((block) => {
     hljs.highlightElement(block);
