@@ -23,41 +23,41 @@ export function getReadableDomain(url) {
 export async function fetchSourceDetails(url) {
   const DEFAULT_IMAGE =
     "https://static.vecteezy.com/system/resources/thumbnails/004/141/669/small/no-photo-or-blank-image-icon-loading-images-or-missing-image-mark-image-not-available-or-image-coming-soon-sign-simple-nature-silhouette-in-frame-isolated-illustration-vector.jpg";
-  // try {
-  // const res = await fetch(
-  //   `https://api.microlink.io/?url=${encodeURIComponent(url)}`
-  // );
-  // let data = await res.json();
-  // const sourceData = data.data;
-  // return {
-  //   title: sourceData.title,
-  //   image: {
-  //     url: sourceData.image.url || DEFAULT_IMAGE,
-  //   },
-  //   description: sourceData.description,
-  //   url: url,
-  //   date: sourceData.date,
-  //   logo: {
-  //     url: sourceData.logo.url || DEFAULT_IMAGE,
-  //   },
-  //   publisher: sourceData.publisher,
-  // };
-  // } catch (err) {
-  console.warn("Cannot retrieve source details");
-  return {
-    title: "",
-    image: {
-      url: DEFAULT_IMAGE,
-    },
-    description: "",
-    url: url,
-    date: new Date().toISOString(),
-    logo: {
-      url: DEFAULT_IMAGE,
-    },
-    publisher: getReadableDomain(url),
-  };
-  // }
+  try {
+    const res = await fetch(
+      `https://api.microlink.io/?url=${encodeURIComponent(url)}`
+    );
+    let data = await res.json();
+    const sourceData = data.data;
+    return {
+      title: sourceData.title,
+      image: {
+        url: sourceData.image.url || DEFAULT_IMAGE,
+      },
+      description: sourceData.description,
+      url: url,
+      date: sourceData.date,
+      logo: {
+        url: sourceData.logo.url || DEFAULT_IMAGE,
+      },
+      publisher: sourceData.publisher,
+    };
+  } catch (err) {
+    console.warn("Cannot retrieve source details");
+    return {
+      title: "",
+      image: {
+        url: DEFAULT_IMAGE,
+      },
+      description: "",
+      url: url,
+      date: new Date().toISOString(),
+      logo: {
+        url: DEFAULT_IMAGE,
+      },
+      publisher: getReadableDomain(url),
+    };
+  }
 }
 
 export function replaceWithClickableLink(body, sources) {

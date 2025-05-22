@@ -67,6 +67,8 @@ let userDetails = {};
 let selectedChat = {};
 let prevCustomInput = null;
 let loadingAiResponse = false;
+export let stopResponseStreaming = false;
+let responseStreamingStatus = false;
 
 let newMessageDetails = {
   selectedText: "",
@@ -94,6 +96,11 @@ marked.setOptions({
 });
 
 function handleSendBtnClick(e) {
+  if (responseStreamingStatus) {
+    console.log("requested to stop streaming");
+    stopResponseStreaming = true;
+    return;
+  }
   if (
     (!loadingAiResponse && newMessageDetails.selectedText.trim()) ||
     (!loadingAiResponse && UPLOADED_DOCUMENTS.length > 0) ||
@@ -104,7 +111,20 @@ function handleSendBtnClick(e) {
   }
 }
 
-function handleNewChatBtnClick() {
+export function handleNewChatBtnClick({
+  messagesContainer,
+  refreshElements,
+  newMessageDetails,
+  contentBox,
+  removeSelectedContent,
+  UPLOADED_DOCUMENTS,
+  imageContainer,
+  chatsContainer,
+  searchTextarea,
+  selectedChat,
+  queryTypes,
+  sideNavbar
+}) {
   messagesContainer.innerHTML = `
     <div class="intro" id="intro">
       <h3>Hey there, ${userDetails?.name?.split(" ")[0]}! 👋</h3>
@@ -114,6 +134,7 @@ function handleNewChatBtnClick() {
       </p>
     </div>
   `;
+  sideNavbar.classList.remove("show-sidenav")
   refreshElements();
   newMessageDetails.actionType = "quick-search";
   handleRemoveSelectedContent(
@@ -217,7 +238,21 @@ function refreshElements() {
           UPLOADED_DOCUMENTS,
           imageContainer
         ),
-      handleNewChatBtnClick,
+      handleNewChatBtnClick: () =>
+        handleNewChatBtnClick({
+          messagesContainer,
+          refreshElements,
+          newMessageDetails,
+          contentBox,
+          removeSelectedContent,
+          UPLOADED_DOCUMENTS,
+          imageContainer,
+          chatsContainer,
+          searchTextarea,
+          selectedChat,
+          queryTypes,
+          sideNavbar
+        }),
       handleDeepResearchClick,
       handleQuickSearchClick,
       handleFactCheckClick,
@@ -257,7 +292,11 @@ function refreshElements() {
           removeSelectedContent,
           chatsMap,
           chatsContainer,
-          sideNavbar
+          sideNavbar,
+          refreshElements,
+          UPLOADED_DOCUMENTS,
+          imageContainer,
+          queryTypes
         ),
       searchChatsAndMessages: (e) =>
         searchChatsAndMessages(e, userDetails, chatsContainer, chatsMap),
@@ -302,6 +341,7 @@ function extractLinks(body) {
 }
 
 async function addNewMessage(customPrompt) {
+  responseStreamingStatus = true;
   let populatingSourcesLoading = false;
   sendBtn.innerHTML = `<img alt="pause" src="./assets/pause.svg" />`;
   const populatedSources = [];
@@ -332,6 +372,7 @@ async function addNewMessage(customPrompt) {
       resultsContainerObj,
       UPLOADED_DOCUMENTS
     );
+    newMessageBox.classList.remove("new-message");
     messagesContainer.appendChild(newMessageBox);
     prevCustomInput = searchTextarea.value;
     handleContentBoxDisplay(
@@ -380,7 +421,6 @@ User Context: ${
       (data) => {
         try {
           loadingAiResponse = false;
-          sendBtn.innerHTML = "Send";
           let replaceWithLink = replaceWithClickableLink(
             data.cleanContent,
             data.citations
@@ -392,7 +432,11 @@ User Context: ${
             .forEach((block) => {
               hljs.highlightElement(block);
             });
-          if (data.verdict && contentType.childNodes.length == 1) {
+          if (
+            data.verdict &&
+            contentType.childNodes.length == 1 &&
+            newMessageDetails.actionType == "fact-check"
+          ) {
             contentType.innerHTML += `<div class="final-fact-verdict ${
               data.verdict
             }">${
@@ -479,14 +523,15 @@ User Context: ${
             panel2: null,
             panel3: null,
           };
-
+        } catch (err) {
+          console.warn("Error while completing the message process");
+          console.error(err.message);
+        } finally {
           loadingAiResponse = false;
           populatingSourcesLoading = false;
           sendBtn.innerHTML = `<img alt="send" src="./assets/send.svg" />`;
-        } catch (err) {
-          sendBtn.innerHTML = `<img alt="send" src="./assets/send.svg" />`;
-          console.warn("Error while completing the message process");
-          console.error(err.message);
+          stopResponseStreaming = false;
+          responseStreamingStatus = false;
         }
       }
     );

@@ -1,4 +1,4 @@
-import { API_URL } from "../../panel.js";
+import { API_URL, stopResponseStreaming } from "../../panel.js";
 import { createChatBox, renderChats } from "../helpers/domHelpers.js";
 
 function extractAndCleanContent(content, verdict) {
@@ -80,6 +80,11 @@ export async function fetchAIResponse(
   onComplete = null
 ) {
   let abortController = new AbortController();
+  let buffer = "";
+  let citations = null;
+  let accumulatedContent = "";
+  let verdict = null;
+  let isComplete = false;
 
   try {
     const response = await fetch(`${API_URL}/ai/generate`, {
@@ -108,11 +113,6 @@ export async function fetchAIResponse(
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
-    let buffer = "";
-    let citations = null;
-    let accumulatedContent = "";
-    let verdict = null;
-    let isComplete = false;
 
     try {
       while (!isComplete) {
@@ -168,6 +168,11 @@ export async function fetchAIResponse(
                     verdict: verdict,
                   });
                 }
+
+                if (stopResponseStreaming) {
+                  abortController.abort();
+                  break;
+                }
               }
             } catch (err) {
               console.warn("Failed to parse SSE chunk:", jsonString, err);
@@ -201,19 +206,33 @@ export async function fetchAIResponse(
       reader.releaseLock();
     }
   } catch (err) {
-    console.error("Fetch error:", err);
-    if (abortController) {
-      abortController.abort();
-    }
+    if (err.name == "AbortError") {
+      const finalExtracted = extractAndCleanContent(
+        accumulatedContent,
+        verdict
+      );
 
-    return {
-      newMessage: {
-        content: "",
-        citations: null,
-        verdict: null,
-      },
-      error: err.message,
-    };
+      onComplete({
+        content: accumulatedContent,
+        cleanContent: finalExtracted.cleanContent,
+        citations: citations,
+        verdict: verdict,
+      });
+    } else {
+      console.error("Fetch error:", err);
+      if (abortController) {
+        abortController.abort();
+      }
+
+      return {
+        newMessage: {
+          content: "",
+          citations: null,
+          verdict: null,
+        },
+        error: err.message,
+      };
+    }
   }
 }
 
@@ -264,7 +283,10 @@ export async function addNewMessageToDB(
   }
 }
 
-export async function deleteChat(chatID) {
+export async function deleteChat(
+  chatID,
+  sideNavbar
+) {
   try {
     const response = await fetch(`${API_URL}/chats/${chatID}`, {
       method: "DELETE",
@@ -272,6 +294,7 @@ export async function deleteChat(chatID) {
       headers: { "Content-Type": "application/json" },
     });
     let data = await response.json();
+    sideNavbar.classList.remove("show-sidenav");
     console.log(data);
   } catch (err) {
     console.error(err);
@@ -308,12 +331,12 @@ export async function searchChatsAndMessages(
     const data = await response.json();
     const { chats, messages } = data.data;
     chatsContainer.innerHTML = "";
-    if(chats.length == 0) {
-         chatsContainer.innerHTML = `<div class="no-chats-found"><img src="./assets/no-chats.svg" alt="no chat"/> <h4>No Results Found</h4></div>`
-    }else{
+    if (chats.length == 0) {
+      chatsContainer.innerHTML = `<div class="no-chats-found"><img src="./assets/no-chats.svg" alt="no chat"/> <h4>No Results Found</h4></div>`;
+    } else {
       chats.forEach((chat) => {
-      chatsContainer.appendChild(createChatBox(chat));
-    });
+        chatsContainer.appendChild(createChatBox(chat));
+      });
     }
   } catch (err) {
     console.error(err);

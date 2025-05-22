@@ -1,4 +1,5 @@
 import { marked } from "../../libs/marked.esm.js";
+import { handleNewChatBtnClick } from "../../panel.js";
 import { deleteChat, fetchAllChats, fetchMessages } from "../api/api.js";
 import { generateRandomId, replaceWithClickableLink } from "../utils.js";
 
@@ -301,10 +302,7 @@ export function createContentBox(
   contentType.className = "content-type";
 
   const actionTag = document.createElement("span");
-  actionTag.className =
-    newMessageDetails.actionType == "Fact Check"
-      ? "action-tag"
-      : "action-tag research";
+  actionTag.className = "action-tag";
   const actionTagArr = newMessageDetails.actionType.split("-");
   const capitalize = (word) =>
     word[0].toUpperCase() + word.slice(1).toLowerCase();
@@ -422,7 +420,6 @@ export function newChatLayout(userInfo) {
         <h3>FactSnap</h3>
         <div>
         <img src="./assets/capture-ss.svg" title="Capture Screen" alt="ss" id="captureBtn" />
-        <img src="./assets/new-chat.svg" title="New Chat" alt="" id="new-chat" />
         </div>
       </nav>
     </header>
@@ -463,9 +460,15 @@ export function newChatLayout(userInfo) {
         <img src="./assets/close.svg" alt="" id="close-btn" />
       </div>
 
+      <button class="create-new-chat-button" id="new-chat">
+        <img src="./assets/new-chat.svg"/>
+        <h4>New Chat</h4>
+      </button>
+
       <div class="chats" id="chats-container"></div>
 
       <div class="settings" id="settings-btn">
+      <img src="./assets/settings.svg"/>
       <h4>Settings</h4>
       </div>
     </div>
@@ -619,7 +622,11 @@ export async function handleChatBoxClick(
   removeSelectedContent,
   chatsMap,
   chatsContainer,
-  sideNavbar
+  sideNavbar,
+  refreshElements,
+  UPLOADED_DOCUMENTS,
+  imageContainer,
+  queryTypes
 ) {
   const chatElement = e.target.closest(".chat");
   if (!chatElement) return;
@@ -627,13 +634,25 @@ export async function handleChatBoxClick(
   const chatID = chatElement.id;
   const chat = chatsMap.get(chatID);
   messagesContainer.innerHTML = `<div class="loading-sources"><div class="loader"></div></div>`;
-
   if (e.target.closest(".delete-btn")) {
     e.stopPropagation();
-    deleteChat(chatID);
+    deleteChat(chatID, sideNavbar);
     chatsContainer.removeChild(chatElement);
     selectedChat = {};
-    // start a new chat
+    handleNewChatBtnClick({
+      messagesContainer,
+      refreshElements,
+      newMessageDetails,
+      contentBox,
+      removeSelectedContent,
+      UPLOADED_DOCUMENTS,
+      imageContainer,
+      chatsContainer,
+      searchTextarea,
+      selectedChat,
+      queryTypes,
+      sideNavbar
+    });
     return;
   }
   sideNavbar.classList.remove("show-sidenav");

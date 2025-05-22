@@ -622,6 +622,10 @@ h1 {
   border: 2px solid #444;
 }
 
+.active-chat h4 {
+  color: #f1f1f1;
+}
+
 .chat:hover h4 {
   color: #f1f1f1;
 }
@@ -717,15 +721,14 @@ h1 {
   color: #f1f1f1;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 15px 25px;
   cursor: pointer;
   font-size: 15px;
   border-top: 2px solid #222;
 }
 
-.settings h4 {
-  font-weight: 300;
+.settings:hover{
+  background: #222;
 }
 
 .settings-contanier {
@@ -743,7 +746,7 @@ h1 {
 }
 
 .settings-box {
-  background: #333333;
+  background: #222;
   width: 320px;
   border-radius: 15px;
 }
@@ -781,7 +784,7 @@ h1 {
   color: #f1f1f1;
   padding: 10px 10px;
   height: 35px;
-  background: #444;
+  background: #333;
   border-bottom: 2px solid #555;
   border-radius: 10px;
   margin-bottom: 5px;
@@ -953,7 +956,37 @@ img {
   margin-top: 10px;
 }
 
-#captureBtn{
-  width: 35px;
+#captureBtn {
+  width: 37px;
   height: 37px;
+}
+
+.create-new-chat-button {
+  display: flex;
+  align-items: center;
+  padding: 15p;
+  padding: 25px;
+  height: 50px;
+  background: none;
+  outline: none;
+  border: none;
+  border-bottom: 2px solid #222;
+  cursor: pointer;
+}
+
+.create-new-chat-button:hover {
+  background: #222;
+}
+
+.create-new-chat-button img,
+.settings img {
+  width: 23px;
+  height: 23px;
+  margin-right: 11px;
+}
+
+.create-new-chat-button h4,
+.settings h4 {
+  font-size: 14px;
+  color: #f1f1f1;
 }
