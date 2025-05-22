@@ -9,7 +9,8 @@ const chatSchema = new Schema(
   { timestamps: true }
 );
 
-chatSchema.index({ user: 1, updatedAt: 1 });
+chatSchema.index({ user: 1, title: "text" },{default_language: 'none'});
 
 const Chat = model("Chat", chatSchema);
+
 export default Chat;

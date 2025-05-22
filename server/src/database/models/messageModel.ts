@@ -3,6 +3,7 @@ import { Schema, model } from "mongoose";
 const MessageSchema = new Schema(
   {
     chatID: { type: String, required: true },
+    sender: { type: Schema.Types.ObjectId, ref: "User" },
     responseModel: {
       type: String,
       enum: ["sonar-pro", "sonar-deep-research"],
@@ -15,6 +16,7 @@ const MessageSchema = new Schema(
       enum: ["deep-research", "quick-search", "fact-check", "user-query"],
     },
     answer: { type: String, required: true },
+    plainAnswer: { type: String },
     sources: [
       {
         title: { type: String },
@@ -37,8 +39,11 @@ const MessageSchema = new Schema(
   { timestamps: true }
 );
 
-MessageSchema.index({ chatID: 1, createdAt: 1 });
+MessageSchema.index({ plainAnswer: "text" });
+MessageSchema.index({ sender: 1 });
 
 const Message = model("Messages", MessageSchema);
-
+// Message.collection.dropIndex("chatID_1_createdAt_1_answer_text");
+// Message.collection.dropIndex("chatID_1_createdAt_1");
+// Message.collection.dropIndex("chatID_1_sender_1");
 export default Message;

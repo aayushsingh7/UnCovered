@@ -1,4 +1,6 @@
-import { generateRandomId } from "../utils.js";
+import { marked } from "../../libs/marked.esm.js";
+import { deleteChat, fetchAllChats, fetchMessages } from "../api/api.js";
+import { generateRandomId, replaceWithClickableLink } from "../utils.js";
 
 export function handleAdjustHeight(searchTextarea) {
   searchTextarea.style.height = "50px";
@@ -85,9 +87,13 @@ export function removeListeners(
     settingsBtn,
     settingsContainer,
     analyzeScreenBtn,
+    chatsContainer,
   },
   handlers
 ) {
+  if (chatsContainer)
+    chatsContainer.removeEventListener("click", handlers.handleChatBoxClick);
+
   if (uploadFileBtn)
     uploadFileBtn.removeEventListener("click", handlers.handleUploadFile);
   if (uploadFileInput)
@@ -146,9 +152,20 @@ export function addListeners(
     settingsBtn,
     settingsContainer,
     analyzeScreenBtn,
+    chatsContainer,
+    searchChatsAndMessagesInput,
   },
   handlers
 ) {
+  if (searchChatsAndMessagesInput)
+    searchChatsAndMessagesInput.addEventListener(
+      "keydown",
+      handlers.searchChatsAndMessages
+    );
+
+  if (chatsContainer)
+    chatsContainer.addEventListener("click", handlers.handleChatBoxClick);
+
   if (uploadFileBtn)
     uploadFileBtn.addEventListener("click", handlers.openDailogBox);
   if (uploadFileInput)
@@ -383,6 +400,20 @@ export function createContentBox(
   return { mainBox, contentType };
 }
 
+export function createChatBox(newChat) {
+  const chatDiv = document.createElement("div");
+  chatDiv.className = "chat";
+  chatDiv.id = newChat.chatID;
+  const h4 = document.createElement("h4");
+  h4.innerText = newChat.title;
+  chatDiv.appendChild(h4);
+  const deleteButton = document.createElement("button");
+  deleteButton.classList = "delete-btn";
+  deleteButton.innerText = "Delete";
+  chatDiv.appendChild(deleteButton);
+  return chatDiv;
+}
+
 export function newChatLayout(userInfo) {
   return `
     <header class="header">
@@ -394,7 +425,6 @@ export function newChatLayout(userInfo) {
     </header>
 
      <button id="captureBtn">Capture Screenshot</button>
-  <img id="preview" alt="Screenshot preview">
 
     <div class="settings-contanier" id="settings-contanier"">
       <div class="settings-box">
@@ -409,17 +439,17 @@ export function newChatLayout(userInfo) {
           <div class="options">
             <div>
               <h4>Deep Research</h4>
-              <button  id="deep-research">OFF</button>
+              <button  id="deep-research-settings-btn">OFF</button>
             </div>
 
             <div>
               <h4>Fact-Checking</h4>
-              <button  id="fact-check">OFF</button>
+              <button  id="fact-check-settings-btn">OFF</button>
             </div>
 
             <div>
               <h4>Quick Search</h4>
-              <button id="quick-search">ON</button>
+              <button id="quick-search-settings-btn">ON</button>
             </div>
           </div>
         </div>
@@ -428,7 +458,7 @@ export function newChatLayout(userInfo) {
 
     <div class="sidenav" id="sidenav">
       <div class="header">
-        <input type="text" placeholder="Search Any Chat" />
+        <input type="text" placeholder="Search Any Chat" id="search-chats-and-messages"/>
         <img src="./assets/close.svg" alt="" id="close-btn" />
       </div>
 
@@ -479,10 +509,154 @@ export function newChatLayout(userInfo) {
 
       <span data-name="quick-search" title="Quick Search" ><img src="./assets/quick.svg" alt=""/></span>
       <span data-name="fact-check" title="Fact Check"><img src="./assets/fact.svg" alt=""/></span>
-      <span data-name="deep-research" title="Deep Research"><img src="./assets/deep.svg" alt=""/></span>
+      <span data-name="deep-research" title="Deep Research" id="deep-research-option"><img src="./assets/deep.svg" alt=""/></span>
       </div>
       <button id="send-btn"><img src="./assets/send.svg" alt="send"/></button>
       </div>
     </div>
     `;
+}
+
+function renderMessages(messages) {
+  return messages
+    .map((message) => {
+      let factVerdict =
+        message.actionType === "fact-check"
+          ? message.verdict === "true"
+            ? "Fact is True"
+            : message.verdict === "false"
+            ? "Fact is False"
+            : "Not Confirmed"
+          : "";
+      let rawHTML = replaceWithClickableLink(message.answer, message.sources);
+      rawHTML = marked.parse(rawHTML);
+      return `
+    <div class="new-message">
+      <div id="random-id-placeholder" class="content-box message-box">
+        <div class="content-type">
+        ${
+          message.actionType != "user-query"
+            ? `<span class="action-tag">${
+                message.actionType == "fact-check"
+                  ? "Fact Check"
+                  : message.actionType == "deep-research"
+                  ? "Deep Research"
+                  : "Quick Search"
+              }</span>`
+            : ""
+        }
+        ${
+          message.actionType == "fact-check"
+            ? `<span class="final-fact-verdict ${message.verdict}">${factVerdict} </span>`
+            : ""
+        }
+        </div>
+        ${
+          message.prompt ? `<p class="custom-prompt">${message.prompt}</p>` : ""
+        }
+        <div class="content-container">
+          ${
+            message.imageURL
+              ? `
+          <div class="selected-image-container">
+            <img class="selected-image" src="" alt="Selected image" />
+          </div>`
+              : ""
+          }
+          ${
+            message.selectedText?.trim()
+              ? `<div class="selected-text">${message.selectedText?.trim()}</div>`
+              : ""
+          }
+        </div>
+        <div class="results-container markdown-body">
+          <div class="result-tabs">
+            <span class="tab active" data-tab="answer">Answer</span>
+            <span class="tab" data-tab="sources" >Sources</span>
+          </div>
+          <div class="results-content">
+            <div class="tab-panel" data-tab="answer" style="display: block;">
+              ${rawHTML}
+            </div>
+            <div class="tab-panel" data-tab="sources" style="display:none;">
+              ${message.sources
+                .map(createSourceBox)
+                .map((el) => el.outerHTML)
+                .join("")}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    `;
+    })
+    .join("");
+}
+
+export async function renderChats(chatsContainer, userDetails, chatsMap) {
+  chatsContainer.innerHTML += `<div class="loading-sources"><div class="loader"></div></div>`;
+  let chats = await fetchAllChats(userDetails._id);
+  chatsContainer.innerHTML = ""
+  chats.map((chat) => {
+    chatsMap.set(chat.chatID, chat);
+    chatsContainer.appendChild(createChatBox(chat));
+  });
+}
+
+export async function handleChatBoxClick(
+  e,
+  selectedChat,
+  newMessageDetails,
+  messagesContainer,
+  searchTextarea,
+  prevCustomInput,
+  contentBox,
+  removeSelectedContent,
+  chatsMap,
+  chatsContainer,
+  sideNavbar
+) {
+  const chatElement = e.target.closest(".chat");
+  if (!chatElement) return;
+
+  const chatID = chatElement.id;
+  const chat = chatsMap.get(chatID);
+  messagesContainer.innerHTML = `<div class="loading-sources"><div class="loader"></div></div>`;
+
+  if (e.target.closest(".delete-btn")) {
+    e.stopPropagation();
+    deleteChat(chatID);
+    chatsContainer.removeChild(chatElement);
+    selectedChat = {};
+    // start a new chat
+    return;
+  }
+  sideNavbar.classList.remove("show-sidenav");
+  selectedChat = chat;
+  highlightSelectedChat(chatID, chatsContainer);
+  const messages = await fetchMessages(chatID);
+  messagesContainer.innerHTML = ""
+  messagesContainer.innerHTML = renderMessages(messages);
+  messagesContainer.querySelectorAll("pre code").forEach((block) => {
+    hljs.highlightElement(block);
+  });
+  newMessageDetails.actionType = "quick-search";
+  newMessageDetails.selectedText = "";
+  handleContentBoxDisplay(
+    "hide",
+    searchTextarea,
+    prevCustomInput,
+    contentBox,
+    removeSelectedContent
+  );
+}
+
+export function highlightSelectedChat(chatID, chatsContainer) {
+  chatsContainer.querySelectorAll(".chat").forEach((chat) => {
+    if (chat.id === chatID) {
+      chat.classList.add("active-chat");
+    } else {
+      chat.classList.remove("active-chat");
+    }
+  });
 }

@@ -1,3 +1,4 @@
+import { API_URL } from "../../panel.js";
 import { newChatLayout } from "../helpers/domHelpers.js";
 
 export async function fetchUserInfo(token) {
@@ -23,6 +24,7 @@ export async function fetchUserInfo(token) {
     });
 
     chrome.storage.local.get(["loggedInUser"], (result) => {
+      console.log({ result });
       document.body.innerHTML = newChatLayout(result.loggedInUser);
       return result.loggedInUser;
     });
@@ -68,15 +70,12 @@ export async function getUserInfo() {
 
 export async function verifyOrCreateUser(userInfo) {
   try {
-    const response = await fetch(
-      `http://localhost:4000/api/v1/users/verifyOrCreateUser`,
-      {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userInfo),
-      }
-    );
+    const response = await fetch(`${API_URL}/users/verifyOrCreateUser`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(userInfo),
+    });
     const user = await response.json();
     return user;
   } catch (err) {

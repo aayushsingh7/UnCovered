@@ -43,7 +43,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     } else if (info.linkUrl) {
       contentToAnalyze = info.linkUrl;
       contentSourceType = "link";
-    } else {
+    } else if (info.srcUrl) {
       imageUrl = info.srcUrl;
       contentToAnalyze = info.srcUrl;
       contentSourceType = "image";
@@ -66,7 +66,12 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         selectedImage: imageUrl,
       },
       () => {
-        // Open the side panel
+        console.log({
+          contentToAnalyze,
+          contentSourceType,
+          actionType,
+          imageUrl,
+        });
         chrome.sidePanel.open({ tabId: tab.id }).then(() => {
           chrome.runtime.sendMessage({
             action: "contentUpdated",
@@ -93,6 +98,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     );
 
+    chrome.storage.local.set({
+      selectedText: null,
+      contentType: null,
+      actionType: null,
+      selectedImage: null,
+    });
     return true;
   }
 

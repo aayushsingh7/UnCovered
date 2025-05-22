@@ -1,16 +1,20 @@
 import { marked } from "./libs/marked.esm.js";
+export const API_URL = "http://localhost:4000/api/v1";
+
 import {
   addNewMessageToDB,
   fetchAIResponse,
   fetchAllChats,
-  fetchMessages,
+  searchChatsAndMessages,
 } from "./utils/api/api.js";
 import { getUserInfo } from "./utils/api/authApi.js";
 import {
   addListeners,
+  createChatBox,
   createContentBox,
   createSourceBox,
   handleAdjustHeight,
+  handleChatBoxClick,
   handleCloseMenuBarClick,
   handleContentBoxDisplay,
   handleMenuBarClick,
@@ -20,7 +24,9 @@ import {
   handleSettingsBtnClick,
   handleSettingsContainerClick,
   handleShowContentBox,
+  highlightSelectedChat,
   removeListeners,
+  renderChats,
   updateToggle,
 } from "./utils/helpers/domHelpers.js";
 import {
@@ -54,7 +60,8 @@ let textElement,
   sendBtn,
   analyzeScreenBtn,
   uploadFileInput,
-  uploadFileBtn;
+  uploadFileBtn,
+  searchChatsAndMessagesInput;
 
 let userDetails = {};
 let selectedChat = {};
@@ -75,6 +82,7 @@ let resultsContainerObj = {
   panel3: null,
 };
 
+let chatsMap = new Map();
 let CHAT_HISTORY = [];
 let UPLOADED_DOCUMENTS = [];
 
@@ -86,7 +94,11 @@ marked.setOptions({
 });
 
 function handleSendBtnClick(e) {
-  if (!loadingAiResponse) {
+  if (
+    !loadingAiResponse ||
+    newMessageDetails.selectedText ||
+    UPLOADED_DOCUMENTS.length > 0
+  ) {
     addNewMessage(searchTextarea.value);
     searchTextarea.style.height = "50px";
   }
@@ -111,6 +123,7 @@ function handleNewChatBtnClick() {
     UPLOADED_DOCUMENTS,
     imageContainer
   );
+  highlightSelectedChat("new-chat", chatsContainer);
   searchTextarea.value = "";
   selectedChat = {};
   handleSelectedActionType(queryTypes, { actionType: "quick-search" });
@@ -151,12 +164,15 @@ function refreshElements() {
   menuBar = document.getElementById("menu");
   closeMenuBar = document.getElementById("close-btn");
   searchTextarea = document.getElementById("search-input") || null;
+  searchChatsAndMessagesInput = document.getElementById(
+    "search-chats-and-messages"
+  );
   removeSelectedContent = document.getElementById("remove-selected-text");
   settingsBtn = document.getElementById("settings-btn");
   settingsContainer = document.getElementById("settings-contanier");
-  deepResearch = document.getElementById("deep-research");
-  quickSearch = document.getElementById("quick-search");
-  factCheck = document.getElementById("fact-check");
+  deepResearch = document.getElementById("deep-research-settings-btn");
+  quickSearch = document.getElementById("quick-search-settings-btn");
+  factCheck = document.getElementById("fact-check-settings-btn");
   newChatBtn = document.getElementById("new-chat");
   chatsContainer = document.getElementById("chats-container");
   queryTypes = document.querySelectorAll(".query-types span");
@@ -182,6 +198,8 @@ function refreshElements() {
       settingsBtn,
       settingsContainer,
       analyzeScreenBtn,
+      chatsContainer,
+      searchChatsAndMessagesInput,
     };
 
     const handlers = {
@@ -227,6 +245,22 @@ function refreshElements() {
           textElement,
           UPLOADED_DOCUMENTS
         ),
+      handleChatBoxClick: (e) =>
+        handleChatBoxClick(
+          e,
+          selectedChat,
+          newMessageDetails,
+          messagesContainer,
+          searchTextarea,
+          prevCustomInput,
+          contentBox,
+          removeSelectedContent,
+          chatsMap,
+          chatsContainer,
+          sideNavbar
+        ),
+      searchChatsAndMessages: (e) =>
+        searchChatsAndMessages(e, userDetails, chatsContainer, chatsMap),
     };
 
     removeListeners(elements, handlers);
@@ -353,6 +387,11 @@ User Context: ${
           );
           let markedHTML = marked(replaceWithLink);
           resultsContainerObj.panel1.innerHTML = markedHTML;
+          resultsContainerObj.panel1
+            .querySelectorAll("pre code")
+            .forEach((block) => {
+              hljs.highlightElement(block);
+            });
           if (data.verdict && contentType.childNodes.length == 1) {
             contentType.innerHTML += `<div class="final-fact-verdict ${
               data.verdict
@@ -368,7 +407,7 @@ User Context: ${
             populatingSourcesLoading = true;
             console.log("============================================");
             resultsContainerObj.tab2.style.display = "block";
-            resultsContainerObj.panel2.innerHTML += `<div class="loading-sources"><div class="loader"></div></div>`;
+            resultsContainerObj.panel2.innerHTML += `<div class="loading-sources"><div class="loader-1"></div></div>`;
             resultsContainerObj.tab2.style.display = "block";
             data.citations.map(async (source, index) => {
               const populatedSource = await fetchSourceDetails(source);
@@ -403,7 +442,11 @@ User Context: ${
             customPrompt,
             newMessageDetails.actionType
           );
-          if (newChat != null) selectedChat = newChat;
+          if (newChat != null) {
+            selectedChat = newChat;
+            chatsContainer.prepend(createChatBox(newChat));
+            highlightSelectedChat(newChat.chatID, chatsContainer);
+          }
           if (!newMessage) {
             handleContentBoxDisplay(
               "show",
@@ -437,15 +480,11 @@ User Context: ${
             panel3: null,
           };
 
-          messagesContainer.scrollTo({
-            top: newMessageBox.offsetTop - 70,
-            behavior: "smooth",
-          });
-
           loadingAiResponse = false;
           populatingSourcesLoading = false;
           sendBtn.innerHTML = `<img alt="send" src="./assets/send.svg" />`;
         } catch (err) {
+          sendBtn.innerHTML = `<img alt="send" src="./assets/send.svg" />`;
           console.warn("Error while completing the message process");
           console.error(err.message);
         }
@@ -475,6 +514,8 @@ async function updateContent() {
       noContentElement.textContent = "Error retrieving content.";
       return;
     }
+
+    console.log({ response });
 
     if (!response.contentType) return;
     handleSelectedActionType(queryTypes, response);
@@ -523,12 +564,7 @@ async function updateContent() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  hljs.configure({
-    tabReplace: "  ",
-    classPrefix: "hljs-",
-  });
-  hljs.highlightAll();
-
+  // await chrome.storage.local.set({loggedInUser: {}});
   const user = await getUserInfo();
   userDetails = user;
 
@@ -555,6 +591,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
       refreshElements();
       updateContent();
+      renderChats(chatsContainer, userDetails, chatsMap);
     }
   );
 
@@ -563,128 +600,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       message.action === "contentUpdated" ||
       message.action === "textUpdated"
     ) {
-      chrome.storage.local.get(
-        ["selectedText", "selectedImage", "contentType", "actionType"],
-        (data) => {}
-      );
       searchTextarea.value = "";
       updateContent();
     }
-  });
-
-  let chats = await fetchAllChats(userDetails._id);
-  chatsContainer.innerHTML += chats
-    .map(
-      (chat) => `
-    <div class="chat" id="${chat.chatID}">
-      <h4>${chat.title}</h4>
-      <button class="delete-btn">Delete</button>
-    </div>
-  `
-    )
-    .join("");
-
-  chats.forEach((chat) => {
-    const chatElement = document.getElementById(chat.chatID);
-    chatElement.addEventListener("click", async () => {
-      selectedChat = chat;
-      const messages = await fetchMessages(chat.chatID);
-      messagesContainer.innerHTML = messages
-        .map((message) => {
-          let factVerdict =
-            message.actionType === "fact-check"
-              ? message.verdict === "true"
-                ? "Fact is True"
-                : message.verdict === "false"
-                ? "Fact is False"
-                : "Not Confirmed"
-              : "";
-          let rawHTML = replaceWithClickableLink(
-            message.answer,
-            message.sources
-          );
-          rawHTML = marked.parse(rawHTML);
-          return `
-    <div class="new-message">
-      <div id="random-id-placeholder" class="content-box message-box">
-        <div class="content-type">
-        ${
-          message.actionType != "user-query"
-            ? `<span class="action-tag">${
-                message.actionType == "fact-check"
-                  ? "Fact Check"
-                  : message.actionType == "deep-research"
-                  ? "Deep Research"
-                  : "Quick Search"
-              }</span>`
-            : ""
-        }
-        ${
-          message.actionType == "fact-check"
-            ? `<span class="final-fact-verdict ${message.verdict}">${factVerdict} </span>`
-            : ""
-        }
-        </div>
-        ${
-          message.prompt ? `<p class="custom-prompt">${message.prompt}</p>` : ""
-        }
-        <div class="content-container">
-          ${
-            message.imageURL
-              ? `
-          <div class="selected-image-container">
-            <img class="selected-image" src="" alt="Selected image" />
-          </div>`
-              : ""
-          }
-          ${
-            message.selectedText?.trim()
-              ? `<div class="selected-text">${message.selectedText?.trim()}</div>`
-              : ""
-          }
-        </div>
-        <div class="results-container markdown-body">
-          <div class="result-tabs">
-            <span class="tab active" data-tab="answer">Answer</span>
-            <span class="tab" data-tab="sources" >Sources</span>
-          </div>
-          <div class="results-content">
-            <div class="tab-panel" data-tab="answer" style="display: block;">
-              ${rawHTML}
-            </div>
-            <div class="tab-panel" data-tab="sources" style="display:none;">
-              ${message.sources
-                .map(createSourceBox)
-                .map((el) => el.outerHTML)
-                .join("")}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    `;
-        })
-        .join("");
-
-      newMessageDetails.actionType = "quick-search";
-      newMessageDetails.selectedText = "";
-      handleContentBoxDisplay(
-        "hide",
-        searchTextarea,
-        prevCustomInput,
-        contentBox,
-        removeSelectedContent
-      );
-
-      document.querySelectorAll("pre code").forEach((block) => {
-        hljs.highlightElement(block);
-      });
-    });
-
-    const deleteBtn = chatElement.querySelector(".delete-btn");
-    deleteBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      // deleteChat(chat.chatID);
-    });
   });
 });

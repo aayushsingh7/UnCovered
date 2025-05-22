@@ -1,43 +1,5 @@
-export async function fetchAllChats(userID) {
-  try {
-    const response = await fetch(
-      `http://localhost:4000/api/v1/chats/${userID}`,
-      {
-        method: "GET",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-    let chats = await response.json();
-    return chats.data;
-  } catch (err) {
-    console.log(err);
-  }
-}
-
-export async function fetchMessages(chatID, offset = 0) {
-  try {
-    const response = await fetch(
-      `http://localhost:4000/api/v1/chats/${chatID}/messages/${offset}`,
-      {
-        method: "GET",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-    let messages = await response.json();
-    return messages.data;
-  } catch (err) {
-    console.log(err);
-  }
-}
-
-export async function searchChat(query) {
-  try {
-  } catch (err) {
-    console.log(err);
-  }
-}
+import { API_URL } from "../../panel.js";
+import { createChatBox, renderChats } from "../helpers/domHelpers.js";
 
 function extractAndCleanContent(content, verdict) {
   let cleanContent = content;
@@ -69,6 +31,44 @@ function extractAndCleanContent(content, verdict) {
   };
 }
 
+export async function fetchAllChats(userID) {
+  try {
+    const response = await fetch(`${API_URL}/chats/user/${userID}`, {
+      method: "GET",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    let chats = await response.json();
+    return chats.data;
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+export async function fetchMessages(chatID, offset = 0) {
+  try {
+    const response = await fetch(
+      `${API_URL}/chats/${chatID}/messages/${offset}`,
+      {
+        method: "GET",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+    let messages = await response.json();
+    return messages.data;
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+export async function searchChat(query) {
+  try {
+  } catch (err) {
+    console.log(err);
+  }
+}
+
 export async function fetchAIResponse(
   userID,
   chatID,
@@ -82,7 +82,7 @@ export async function fetchAIResponse(
   let abortController = new AbortController();
 
   try {
-    const response = await fetch(`http://localhost:4000/api/v1/ai/generate`, {
+    const response = await fetch(`${API_URL}/ai/generate`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -231,32 +231,29 @@ export async function addNewMessageToDB(
   actionType
 ) {
   try {
-    const response = await fetch(
-      `http://localhost:4000/api/v1/chats/messages/create`,
-      {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userID,
-          chatID,
-          title,
-          newMsg: {
-            verdict: verdict,
-            responseModel: actionType.startsWith("deep")
-              ? "sonar-reasoning-pro"
-              : "sonar-pro",
-            prompt,
-            selectedText,
-            actionType,
-            documents,
-            answer: answer,
-            sources: sources,
-            responseRawJSON: rawJSON,
-          },
-        }),
-      }
-    );
+    const response = await fetch(`${API_URL}/chats/messages/create`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userID,
+        chatID,
+        title,
+        newMsg: {
+          verdict: verdict,
+          responseModel: actionType.startsWith("deep")
+            ? "sonar-reasoning-pro"
+            : "sonar-pro",
+          prompt,
+          selectedText,
+          actionType,
+          documents,
+          answer: answer,
+          sources: sources,
+          responseRawJSON: rawJSON,
+        },
+      }),
+    });
     const data = await response.json();
     return {
       newMessage: data.newMessage,
@@ -264,5 +261,59 @@ export async function addNewMessageToDB(
     };
   } catch (err) {
     console.log(err);
+  }
+}
+
+export async function deleteChat(chatID) {
+  try {
+    const response = await fetch(`${API_URL}/chats/${chatID}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    let data = await response.json();
+    console.log(data);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+export async function searchChatsAndMessages(
+  e,
+  userDetails,
+  chatsContainer,
+  chatsMap
+) {
+  if (e.key !== "Enter") return;
+  const query = e.target.value.trim();
+  if (query === "") {
+    chatsContainer.innerHTML = "";
+    chatsMap = new Map();
+    renderChats(chatsContainer, userDetails, chatsMap);
+    return;
+  }
+
+  chatsContainer.innerHTML = `<div class="loading-sources"><div class="loader"></div></div>`;
+  try {
+    const response = await fetch(
+      `${API_URL}/chats/search?searchQuery=${encodeURIComponent(
+        query
+      )}&userID=${userDetails._id}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      }
+    );
+    const data = await response.json();
+    const { chats, messages } = data.data;
+    chatsContainer.innerHTML = "";
+    chats.forEach((chat) => {
+      chatsContainer.appendChild(createChatBox(chat));
+    });
+  } catch (err) {
+    console.error(err);
+    chatsContainer.innerHTML =
+      "<p>Error loading search results. Please try again.</p>";
   }
 }

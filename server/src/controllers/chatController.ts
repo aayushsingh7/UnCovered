@@ -39,7 +39,7 @@ class ChatController {
     try {
       const searchResults = await this.chatService.searchChat(
         `${req.query.searchQuery}`,
-        `${req.params.userID}`
+        `${req.query.userID}`
       );
       res.status(200).send({
         success: true,
@@ -50,11 +50,31 @@ class ChatController {
       res.status(err.statusCode).send({ success: false, message: err.message });
     }
   }
+  public async deleteChat(req: Request, res: Response) {
+    try {
+      await this.chatService.deleteChat(req.params.chatID);
+      res
+        .status(200)
+        .send({ success: true, message: "Chat Deleted Successfully" });
+    } catch (err: any) {
+      res.status(err.statusCode).send({ success: false, message: err.message });
+    }
+  }
   public async addNewMessage(req: Request, res: Response) {
     try {
-      const {userID, chatID, title, newMsg} = req.body;
-      const response = await this.chatService.addNewMessage(userID,chatID,title,newMsg) 
-      res.status(response.status).send({success:response.success,message:response.message,newMessage:response.newMessage,newChat:response.newChat})
+      const { userID, chatID, title, newMsg } = req.body;
+      const response = await this.chatService.addNewMessage(
+        userID,
+        chatID,
+        title,
+        newMsg
+      );
+      res.status(response.status).send({
+        success: response.success,
+        message: response.message,
+        newMessage: response.newMessage,
+        newChat: response.newChat,
+      });
     } catch (err: any) {
       res.status(err.statusCode).send({ success: false, message: err.message });
     }

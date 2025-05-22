@@ -64,8 +64,8 @@ export function replaceWithClickableLink(body, sources) {
   return body.replace(/\[(\d+)\]/g, (match, num) => {
     const index = parseInt(num, 10);
     // handle populated & non-populated sources
-    const source = sources[index - 1].url
-      ? sources[index - 1].url
+    const source = sources[index - 1]?.url
+      ? sources[index - 1]?.url
       : sources[index - 1];
     if (source) {
       return `[${match}](${source})`;

@@ -588,6 +588,7 @@ h1 {
   justify-content: space-between;
   padding: 15px;
   cursor: pointer;
+  height: 50px;
   border-radius: 10px;
 }
 
@@ -610,10 +611,11 @@ h1 {
   border: none;
   border-radius: 10px;
   margin-left: 10px;
-  display: none;
   cursor: pointer;
   font-weight: 600;
-  transition: 0.3s ease-in-out;
+   opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0s linear 0.3s;
 }
 
 .chat:hover {
@@ -621,14 +623,22 @@ h1 {
   padding: 9px 15px;
 }
 
+.active-chat {
+  background: #222222;
+  padding: 7px 13px !important;
+  border: 2px solid #444;
+}
+
 .chat:hover h4 {
   color: #f1f1f1;
 }
 
 .chat:hover button {
-  display: flex;
+   opacity: 1;
+  visibility: visible;
   color: #ff0000;
   background: #444444;
+  transition-delay: 0.5s; 
 }
 
 .chat button:hover {
@@ -871,13 +881,12 @@ h1 {
   left: -2px;
 }
 
-.loader {
-  margin-top: 10px;
-  width: 30px;
-  padding: 6px;
+.loader-1 {
+  width: 20px;
+  padding: 5px;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: #25b09b;
+  background: #ffffff;
   --_m: conic-gradient(#0000 10%, #000), linear-gradient(#000 0 0) content-box;
   -webkit-mask: var(--_m);
   mask: var(--_m);
@@ -886,10 +895,31 @@ h1 {
   animation: l3 1s infinite linear;
 }
 
-.loader-1 {
-  margin-top: 0px;
-  width: 20px;
-  padding: 5px;
+/* HTML: <div class="loader"></div> */
+.loader {
+  width: 50px;
+  aspect-ratio: 1;
+  --c:no-repeat radial-gradient(farthest-side,#ffffff 92%,#ffffff00);
+  background: 
+    var(--c) 50%  0, 
+    var(--c) 50%  100%, 
+    var(--c) 100% 50%, 
+    var(--c) 0    50%;
+  background-size: 10px 10px;
+  animation: l18 1s infinite;
+  position: relative;
+}
+.loader::before {    
+  content:"";
+  position: absolute;
+  inset:0;
+  margin: 3px;
+  background: repeating-conic-gradient(#ffffff00 0 35deg,#fdfdfd 0 90deg);
+  -webkit-mask: radial-gradient(farthest-side,#0000 calc(100% - 3px),#000 0);
+  border-radius: 50%;
+}
+@keyframes l18 { 
+  100%{transform: rotate(.5turn)}
 }
 
 @keyframes l3 {
