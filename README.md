@@ -46,7 +46,7 @@ No tab-switching, no effort. Just truth, instantly.
 FactSnap eliminates friction from fact-checking with **3-click verification**:
 
 ### For Text & Website Analysis 📝
-1. **Select** any text on any webpage
+1. **Select** any text/link on any webpage
 2. **Right-click** → **FactSnap** → Choose from 3 options:
    - 🔍 **Quick Search** - Get instant context and information
    - ✅ **Fact-Check** - Get clear verdict: True/False/Unconfirmed
@@ -67,7 +67,11 @@ FactSnap eliminates friction from fact-checking with **3-click verification**:
 - **Auto-mode**: 3-click instant results
 - **Custom prompt**: Add your own context for enhanced precision
 
+
+<img src="https://res.cloudinary.com/dvk80x6fi/image/upload/v1748000389/file_2025-05-23_11.39.22_cdqxbv.png" alt="user-flow"/>
+
 ---
+
 
 ## 🚀 Key Features
 

@@ -1,5 +1,5 @@
 {
-  "name": "FactSnap - One-Click AI fact-checking",
+  "name": "FactSnap – Instant AI fact-checks and research for anything you see online.",
   "version": "1.0",
   "manifest_version": 3,
   "permissions": ["contextMenus", "sidePanel", "storage", "activeTab", "identity","scripting"],
