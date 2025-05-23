@@ -7,20 +7,45 @@ A revolutionary Chrome extension that brings real-time fact-checking, quick-sear
 
 ## 🎯 The Problem We're Solving
 
-In today's digital age, misinformation spreads faster than wildfire:
+In today’s digital age, misinformation spreads faster than ever — not just during major events like conflicts or elections, but **every single day**.
 
-- **Recent conflicts** (like India-Pakistan tensions) flood social media with unverified claims
-- **AI-generated content** makes it harder than ever to distinguish fact from fiction  
-- **Existing tools** like Perplexity are powerful but require multiple steps: pause → copy → new tab → go to a site → paste content → search.
-- **People want instant verification** without disrupting their browsing flow
+From AI-generated images and deepfakes to fake headlines and out-of-context quotes, our feeds are flooded with misleading content. It’s becoming harder and harder to tell what’s real.
 
-**The result?** Misinformation spreads because verification is too cumbersome.
+I saw this firsthand during the recent India-Pakistan tensions — my social media was filled with AI-generated visuals, fake news clips, and viral claims. But even outside of that, I still encounter suspicious content on a daily basis.
+
+It’s not just me. These problems are everywhere:
+
+- **AI-generated content** makes it hard to separate fact from fiction  
+- **Verified tools exist** (like ChatGPT, Perplexity) — but using them breaks your flow:  
+  pause what you're doing → copy the claim → open a new tab → find the right tool → paste → run the search → scroll through a long response → decide what’s true  
+- **People want instant verification** without leaving the page or losing focus
+
+**The result?** Misinformation spreads because fact-checking is just too slow and inconvenient.
+
+That’s why I built **FactSnap** — select text → right-click → verify.  
+No tab-switching, no effort. Just truth, instantly.
+
+
+### 📈 Some Stats
+> 86% of online users have believed fake news was real at least once.
+
+> Over 33% of people see misleading information online each week.
+
+> Fake news often spreads faster and wider than real news.
+
+<img height="300px" src="https://res.cloudinary.com/dvk80x6fi/image/upload/v1747983183/kk_fd28so.png" alt="stat">
+
+> *Source: World Economic Forum, based on 1,490 expert opinions collected Sep 4 – Oct 9, 2023*
+
+---
+
+
 
 ## 💡 Our Solution
 
 FactSnap eliminates friction from fact-checking with **3-click verification**:
 
-### For Text 📝
+### For Text & Website Analysis 📝
 1. **Select** any text on any webpage
 2. **Right-click** → **FactSnap** → Choose from 3 options:
    - 🔍 **Quick Search** - Get instant context and information
@@ -38,11 +63,6 @@ FactSnap eliminates friction from fact-checking with **3-click verification**:
 2. **Select "Capture Screen"** button
 3. **Analyze** visual content for misinformation instantly
 
-### Website Analysis 🌐
-1. **Click FactSnap extension icon**
-2. **Paste any website URL**
-3. **Get instant summary** or comprehensive fact-checking
-
 ### Customization 🎛️
 - **Auto-mode**: 3-click instant results
 - **Custom prompt**: Add your own context for enhanced precision
@@ -53,19 +73,27 @@ FactSnap eliminates friction from fact-checking with **3-click verification**:
 
 | Feature | Description |
 |---------|-------------|
-| **⚡ 3-Click Verification** | Select text → Right-click → FactSnap → Choose mode |
+| **⚡ 3-Click Verification** | Select text/link → Right-click → FactSnap → Choose mode |
 | **🎯 Multiple Search Modes** | Quick Search, Fact-Check, Deep Research for text; Quick Search & Fact-Check for images |
 | **🖼️ Image Analysis** | Right-click any image → FactSnap → Instant verification |
 | **📸 Screen Capture** | Extension toolbar → Capture Screen → Analyze content |
-| **🌐 Website Analysis** | Paste any URL → Get summary or fact-check entire pages |
+| **🌐 Website Analysis** | Paste any URL → Get summary or fact-check entire pages (right click also works) |
 | **📚 Citation-Backed Results** | All answers powered by Perplexity's reliable sources |
 | **🎨 Clean Interface** | Non-intrusive, seamless browsing experience |
 
 ---
 
+## ✨ Sonar Models & APIs Used
+- `sonar-pro`: Used for Quick Search and Fact-Checking
+- `sonar-deep-research`: Used for Deep Research
+- [microlink.io](https://microlink.io/): Used to fetch source metadata (title, heading, description, logo)
+
+---
+
+
 ## 🔧 Tech Stack
 
-- **Frontend**: React + Chrome Extension APIs
+- **Frontend**: HTML + JavaScript (vanilla) + Chrome Extension APIs + CSS for styling.
 - **Backend**: Node.js + Express
 - **AI Power**: Perplexity Sonar API
 - **Database**: MongoDB
@@ -101,11 +129,12 @@ FactSnap eliminates friction from fact-checking with **3-click verification**:
 
 2. **Install dependencies**
    ```bash
+   cd server
    npm install
    ```
 
 3. **Set up environment variables**
-   Create `.env` in the root directory:
+   Create `.env` inside **server** folder:
    ```env
    PORT=4000
    PERPLEXITY_API_KEY=your_perplexity_api_key_here
