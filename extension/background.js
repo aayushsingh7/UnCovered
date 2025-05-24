@@ -66,12 +66,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         selectedImage: imageUrl,
       },
       () => {
-        console.log({
-          contentToAnalyze,
-          contentSourceType,
-          actionType,
-          imageUrl,
-        });
         chrome.sidePanel.open({ tabId: tab.id }).then(() => {
           chrome.runtime.sendMessage({
             action: "contentUpdated",

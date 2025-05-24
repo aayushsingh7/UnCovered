@@ -1,5 +1,5 @@
 {
-  "name": "FactSnap – Instant AI fact-checks and research for anything you see online.",
+  "name": "FactSnap",
   "version": "1.0",
   "manifest_version": 3,
   "permissions": ["contextMenus", "sidePanel", "storage", "activeTab", "identity","scripting"],
@@ -13,7 +13,7 @@
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_title": "FactSnap",
-    "default_icon": "./assets/icon.png"
+    "default_icon": "./assets/main-logo.PNG"
   },
   "background": {
     "service_worker": "background.js"
@@ -22,8 +22,8 @@
     "default_path": "panel.html"
   },
   "icons": {
-    "16": "./assets/icon.png",
-    "48": "./assets/icon.png",
-    "128": "./assets/icon.png"
+    "16": "./assets/main-logo.PNG",
+    "48": "./assets/main-logo.PNG",
+    "128": "./assets/main-logo.PNG"
   }
 }

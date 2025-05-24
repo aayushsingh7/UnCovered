@@ -727,7 +727,7 @@ h1 {
   border-top: 2px solid #222;
 }
 
-.settings:hover{
+.settings:hover {
   background: #222;
 }
 
@@ -989,4 +989,55 @@ img {
 .settings h4 {
   font-size: 14px;
   color: #f1f1f1;
+}
+
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Toast Style */
+.toast {
+  padding: 12px 20px;
+  min-width: 150px;
+  background-color: #323232;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 14px;
+  opacity: 0;
+  transform: translateX(100%);
+  animation: slideIn 0.4s forwards, fadeOut 0.4s ease 2.6s forwards;
+}
+
+.toast.success {
+  background-color: #2ecc71;
+}
+.toast.error {
+  background-color: #e74c3c;
+}
+.toast.info {
+  background-color: #3498db;
+}
+.toast.warning {
+  background-color: #f1c40f;
+  color: #000;
+}
+
+@keyframes slideIn {
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
 }

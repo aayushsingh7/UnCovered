@@ -29,7 +29,7 @@ export function handleRemoveSelectedContent(
   UPLOADED_DOCUMENTS.length = 0;
   contentBox.style.display = "none";
   removeSelectedContent.style.display = "none";
-  imageContainer.inerHTML = "";
+  imageContainer.innerHTML = "";
   imageContainer.style.display = "none";
 }
 
@@ -171,8 +171,9 @@ export function addListeners(
     uploadFileBtn.addEventListener("click", handlers.openDailogBox);
   if (uploadFileInput)
     uploadFileInput.addEventListener("change", handlers.handleUploadFile);
-  if (analyzeScreenBtn)
+  if (analyzeScreenBtn) {
     analyzeScreenBtn.addEventListener("click", handlers.analyzeScreen);
+  }
 
   queryTypes.forEach((span) => {
     span.addEventListener("click", handlers.handleQueryTypeClick);
@@ -414,6 +415,7 @@ export function createChatBox(newChat) {
 
 export function newChatLayout(userInfo) {
   return `
+   <div class="toast-container" id="toastContainer"></div>
     <header class="header">
       <nav>
         <img src="./assets/menu.svg" alt="" id="menu" />
@@ -576,12 +578,31 @@ function renderMessages(messages) {
         <div class="results-container markdown-body">
           <div class="result-tabs">
             <span class="tab active" data-tab="answer">Answer</span>
+            ${
+              message.documents.length > 0
+                ? `<span class="tab" data-tab="attachments">Attachments</span>`
+                : ""
+            }
             <span class="tab" data-tab="sources" >Sources</span>
           </div>
           <div class="results-content">
             <div class="tab-panel" data-tab="answer" style="display: block;">
               ${rawHTML}
-            </div>
+            </div> 
+                 <div
+                   class="tab-panel attachments"
+                   data-tab="attachments"
+                   style="display:none;"
+                 >
+                  ${message?.documents
+                    ?.map((image, index) => {
+                      return `<img src="${image}" alt="uploaded image ${
+                        index + 1
+                      }" />`;
+                    })
+                    .join("")}
+                 </div>
+
             <div class="tab-panel" data-tab="sources" style="display:none;">
               ${message.sources
                 .map(createSourceBox)
@@ -601,10 +622,10 @@ export async function renderChats(chatsContainer, userDetails, chatsMap) {
   chatsContainer.innerHTML += `<div class="loading-sources"><div class="loader"></div></div>`;
   let chats = await fetchAllChats(userDetails._id);
   chatsContainer.innerHTML = "";
-  if (chats.length == 0) {
+  if (chats?.length == 0) {
     chatsContainer.innerHTML = `<div class="no-chats-found"><img src="./assets/no-chats.svg" alt="no chat"/> <h4>No Chats Found</h4></div>`;
   } else {
-    chats.map((chat) => {
+    chats?.map((chat) => {
       chatsMap.set(chat.chatID, chat);
       chatsContainer.appendChild(createChatBox(chat));
     });
@@ -651,7 +672,7 @@ export async function handleChatBoxClick(
       searchTextarea,
       selectedChat,
       queryTypes,
-      sideNavbar
+      sideNavbar,
     });
     return;
   }

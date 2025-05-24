@@ -118,14 +118,12 @@ class AIService {
                   })}\n\n`;
                 }
 
-                // Handle finish reason
                 if (data?.choices?.[0]?.finish_reason === "stop") {
                   yield `data: [DONE]\n\n`;
                   return;
                 }
               } catch (err) {
                 console.warn("Failed to parse chunk:", jsonString, err);
-                // Continue processing other chunks
               }
             }
           }

@@ -1,5 +1,6 @@
 import { API_URL, stopResponseStreaming } from "../../panel.js";
 import { createChatBox, renderChats } from "../helpers/domHelpers.js";
+import { showToast } from "../utils.js";
 
 function extractAndCleanContent(content, verdict) {
   let cleanContent = content;
@@ -41,7 +42,7 @@ export async function fetchAllChats(userID) {
     let chats = await response.json();
     return chats.data;
   } catch (err) {
-    console.log(err);
+    showToast("Oops! something went wrong while fetching the chats", "error")
   }
 }
 
@@ -58,14 +59,7 @@ export async function fetchMessages(chatID, offset = 0) {
     let messages = await response.json();
     return messages.data;
   } catch (err) {
-    console.log(err);
-  }
-}
-
-export async function searchChat(query) {
-  try {
-  } catch (err) {
-    console.log(err);
+    showToast("Oops! something went wrong while fetching messages","error")
   }
 }
 
@@ -224,6 +218,13 @@ export async function fetchAIResponse(
         abortController.abort();
       }
 
+      onComplete({
+        content: null,
+        cleanContent: null,
+        citations: null,
+        verdict: null,
+      });
+
       return {
         newMessage: {
           content: "",
@@ -279,14 +280,11 @@ export async function addNewMessageToDB(
       newChat: data.newChat,
     };
   } catch (err) {
-    console.log(err);
+    showToast("Oops! something went wrong while saving the message😥","error")
   }
 }
 
-export async function deleteChat(
-  chatID,
-  sideNavbar
-) {
+export async function deleteChat(chatID, sideNavbar) {
   try {
     const response = await fetch(`${API_URL}/chats/${chatID}`, {
       method: "DELETE",
@@ -295,9 +293,9 @@ export async function deleteChat(
     });
     let data = await response.json();
     sideNavbar.classList.remove("show-sidenav");
-    console.log(data);
+    showToast("Chat deleted successfully!", "success")
   } catch (err) {
-    console.error(err);
+    showToast("Cannot delete the chat at this momemt😥","error")
   }
 }
 

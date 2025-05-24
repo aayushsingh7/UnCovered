@@ -1,5 +1,6 @@
 import { API_URL } from "../../panel.js";
 import { newChatLayout } from "../helpers/domHelpers.js";
+import { showToast } from "../utils.js";
 
 export async function fetchUserInfo(token) {
   try {
@@ -24,12 +25,11 @@ export async function fetchUserInfo(token) {
     });
 
     chrome.storage.local.get(["loggedInUser"], (result) => {
-      console.log({ result });
       document.body.innerHTML = newChatLayout(result.loggedInUser);
       return result.loggedInUser;
     });
   } catch (err) {
-    console.error("Failed to fetch user info:", err);
+    showToast("Oops! something went wrong while fetching user info","error")
     return null;
   }
 }
@@ -63,6 +63,7 @@ export async function getUserInfo() {
     });
     return await fetchUserInfo(token);
   } catch (error) {
+    showToast("User authentication failed, try again", "error")
     console.error("Authentication failed:", error);
     return null;
   }
@@ -79,6 +80,6 @@ export async function verifyOrCreateUser(userInfo) {
     const user = await response.json();
     return user;
   } catch (err) {
-    console.log(err);
+    showToast("Cannot verify the user at this moment","error")
   }
 }

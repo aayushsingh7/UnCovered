@@ -1,3 +1,4 @@
+import { showToast } from "../utils.js";
 import { handleShowContentBox } from "./domHelpers.js";
 
 export async function analyzeScreen(
@@ -6,7 +7,8 @@ export async function analyzeScreen(
   imageContainer,
   newMessageDetails,
   textElement,
-  UPLOADED_DOCUMENTS
+  UPLOADED_DOCUMENTS,
+  sendBtn
 ) {
   chrome.runtime.sendMessage({ action: "captureScreen" }, async (response) => {
     if (response && response.screenshotUrl) {
@@ -20,9 +22,20 @@ export async function analyzeScreen(
       imgTag.alt = "image";
       div.appendChild(imgTag);
       imageContainer.appendChild(div);
-      const { secureURL } = await uploadToCloudinary(response.screenshotUrl);
-      imgTag.src = secureURL;
-      UPLOADED_DOCUMENTS.push(secureURL);
+      try {
+        const { secureURL } = await uploadToCloudinary(
+          response.screenshotUrl,
+          {},
+          sendBtn
+        );
+        imgTag.src = secureURL;
+        UPLOADED_DOCUMENTS.push(secureURL);
+      } catch (err) {
+        div.remove();
+        showToast("Cannot upload image at this moment!", "error");
+        contentBox.style.display = "none";
+        removeSelectedContent.style.display = "none";
+      }
     }
   });
 }
@@ -34,7 +47,8 @@ export async function handleUploadFile(
   imageContainer,
   newMessageDetails,
   textElement,
-  UPLOADED_DOCUMENTS
+  UPLOADED_DOCUMENTS,
+  sendBtn
 ) {
   handleShowContentBox(contentBox, removeSelectedContent);
   imageContainer.style.display = "flex";
@@ -56,15 +70,26 @@ export async function handleUploadFile(
     imgTag.alt = "image";
     div.appendChild(imgTag);
     imageContainer.appendChild(div);
-    const { secureURL } = await uploadToCloudinary(base64);
-    imgTag.src = secureURL;
-    UPLOADED_DOCUMENTS.push(secureURL);
+    try {
+      const { secureURL } = await uploadToCloudinary(base64, {}, sendBtn);
+      imgTag.src = secureURL;
+      UPLOADED_DOCUMENTS.push(secureURL);
+    } catch (err) {
+      div.remove();
+      showToast("Cannot upload image at this moment!", "error");
+      contentBox.style.display = "none";
+      removeSelectedContent.style.display = "none";
+    }
   } else {
-    alert("Only images upload are supported for now");
+    showToast("Only PNG, JPG, JPEG & WEBP are supported", "info");
+    contentBox.style.display = "none";
+    removeSelectedContent.style.display = "none";
   }
 }
 
-export async function uploadToCloudinary(base64Data, options = {}) {
+export async function uploadToCloudinary(base64Data, options = {}, sendBtn) {
+  sendBtn.disabled = true;
+  sendBtn.innerHTML = `<div class="loader-1 loader-btn"></div>`;
   const {
     cloudName = "dvk80x6fi",
     uploadPreset = "factsnap",
@@ -111,6 +136,9 @@ export async function uploadToCloudinary(base64Data, options = {}) {
   } catch (error) {
     console.error("Error uploading to Cloudinary:", error);
     throw error;
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.innerHTML = `<img alt="send" src="./assets/send.svg" />`;
   }
 }
 

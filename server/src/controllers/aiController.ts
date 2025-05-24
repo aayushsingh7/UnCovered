@@ -61,7 +61,6 @@ export class AIController {
         }
       }
     } catch (err: any) {
-      console.log("Controller error", err.message);
       if (!res.writableEnded) {
         res.status(err.statusCode || 500).json({
           success: false,

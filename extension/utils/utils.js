@@ -2,16 +2,12 @@ export function getReadableDomain(url) {
   try {
     const { hostname } = new URL(url);
     const filteredHost = hostname
-      .replace(/^www\d*\./, "") // remove www, www1, etc.
-      .replace(/^m\./, "") // remove m. for mobile
-      .replace(/^en\./, ""); // optionally remove language subdomains
+      .replace(/^www\d*\./, "")
+      .replace(/^m\./, "")
+      .replace(/^en\./, "");
 
-    // Split by . and - to separate words
-    const words = filteredHost
-      .split(/[.\-]/) // split by dot or dash
-      .filter(Boolean); // remove empty strings
+    const words = filteredHost.split(/[.\-]/).filter(Boolean);
 
-    // Capitalize each word
     const readableName = words[0].charAt(0).toUpperCase() + words[0].slice(1);
 
     return readableName;
@@ -63,7 +59,6 @@ export async function fetchSourceDetails(url) {
 export function replaceWithClickableLink(body, sources) {
   return body.replace(/\[(\d+)\]/g, (match, num) => {
     const index = parseInt(num, 10);
-    // handle populated & non-populated sources
     const source = sources[index - 1]?.url
       ? sources[index - 1]?.url
       : sources[index - 1];
@@ -83,4 +78,17 @@ export function generateRandomId() {
     id += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return id;
+}
+
+export function showToast(message, type = "info", duration = 3000) {
+  const container = document.getElementById("toastContainer");
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.remove();
+  }, duration);
 }

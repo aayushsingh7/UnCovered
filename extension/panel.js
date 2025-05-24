@@ -34,7 +34,7 @@ import {
   handleUploadFile,
   uploadToCloudinary,
 } from "./utils/helpers/fileHelpers.js";
-import { fetchSourceDetails, replaceWithClickableLink } from "./utils/utils.js";
+import { fetchSourceDetails, replaceWithClickableLink, showToast } from "./utils/utils.js";
 
 let textElement,
   imageContainer,
@@ -97,7 +97,6 @@ marked.setOptions({
 
 function handleSendBtnClick(e) {
   if (responseStreamingStatus) {
-    console.log("requested to stop streaming");
     stopResponseStreaming = true;
     return;
   }
@@ -123,7 +122,7 @@ export function handleNewChatBtnClick({
   searchTextarea,
   selectedChat,
   queryTypes,
-  sideNavbar
+  sideNavbar,
 }) {
   messagesContainer.innerHTML = `
     <div class="intro" id="intro">
@@ -134,8 +133,8 @@ export function handleNewChatBtnClick({
       </p>
     </div>
   `;
-  sideNavbar.classList.remove("show-sidenav")
-  refreshElements();
+  sideNavbar.classList.remove("show-sidenav");
+  // refreshElements();
   newMessageDetails.actionType = "quick-search";
   handleRemoveSelectedContent(
     contentBox,
@@ -153,6 +152,7 @@ export function handleNewChatBtnClick({
 function handleDeepResearchClick(e) {
   e.stopPropagation();
   deepResearchStatus = !deepResearchStatus;
+  showToast("Changes saved successfully!","success")
   updateToggle(deepResearch, deepResearchStatus);
   chrome.storage.local.set({ deepResearch: deepResearchStatus });
 }
@@ -161,6 +161,7 @@ function handleQuickSearchClick(e) {
   e.stopPropagation();
   quickSearchStatus = !quickSearchStatus;
   updateToggle(quickSearch, quickSearchStatus);
+   showToast("Changes saved successfully!","success")
   chrome.storage.local.set({ quickSearch: quickSearchStatus });
 }
 
@@ -168,6 +169,7 @@ function handleFactCheckClick(e) {
   e.stopPropagation();
   factCheckStatus = !factCheckStatus;
   updateToggle(factCheck, factCheckStatus);
+   showToast("Changes saved successfully!","success")
   chrome.storage.local.set({ factCheck: factCheckStatus });
 }
 
@@ -202,6 +204,9 @@ function refreshElements() {
   uploadFileInput = document.getElementById("upload-input");
   uploadFileBtn = document.getElementById("upload-btn");
 
+  UPLOADED_DOCUMENTS.length = 0;
+  imageContainer.innerHTML = ""
+
   if (userDetails.email) {
     const elements = {
       uploadFileBtn,
@@ -222,6 +227,10 @@ function refreshElements() {
       chatsContainer,
       searchChatsAndMessagesInput,
     };
+
+    updateToggle(factCheck, factCheckStatus);
+    updateToggle(quickSearch, quickSearchStatus);
+    updateToggle(deepResearch, deepResearchStatus);
 
     const handlers = {
       handleQueryTypeClick: (e) =>
@@ -251,7 +260,7 @@ function refreshElements() {
           searchTextarea,
           selectedChat,
           queryTypes,
-          sideNavbar
+          sideNavbar,
         }),
       handleDeepResearchClick,
       handleQuickSearchClick,
@@ -267,7 +276,8 @@ function refreshElements() {
           imageContainer,
           newMessageDetails,
           textElement,
-          UPLOADED_DOCUMENTS
+          UPLOADED_DOCUMENTS,
+          sendBtn
         ),
       openDailogBox,
       handleUploadFile: (e) =>
@@ -278,7 +288,8 @@ function refreshElements() {
           imageContainer,
           newMessageDetails,
           textElement,
-          UPLOADED_DOCUMENTS
+          UPLOADED_DOCUMENTS,
+          sendBtn
         ),
       handleChatBoxClick: (e) =>
         handleChatBoxClick(
@@ -372,7 +383,6 @@ async function addNewMessage(customPrompt) {
       resultsContainerObj,
       UPLOADED_DOCUMENTS
     );
-    newMessageBox.classList.remove("new-message");
     messagesContainer.appendChild(newMessageBox);
     prevCustomInput = searchTextarea.value;
     handleContentBoxDisplay(
@@ -449,7 +459,6 @@ User Context: ${
           }
           if (data.citations.length > 0 && !populatingSourcesLoading) {
             populatingSourcesLoading = true;
-            console.log("============================================");
             resultsContainerObj.tab2.style.display = "block";
             resultsContainerObj.panel2.innerHTML += `<div class="loading-sources"><div class="loader-1"></div></div>`;
             resultsContainerObj.tab2.style.display = "block";
@@ -472,12 +481,25 @@ User Context: ${
         }
       },
       async (completeData) => {
+        if (!completeData.content) {
+          handleContentBoxDisplay(
+            "show",
+            searchTextarea,
+            prevCustomInput,
+            contentBox,
+            removeSelectedContent
+          );
+          messagesContainer.removeChild(newMessageBox);
+          showToast("Oops! cannot process your request at this moment😥","error")
+          return;
+        }
         try {
+          newMessageBox.classList.remove("new-message");
           const { newChat, newMessage } = await addNewMessageToDB(
             completeData.verdict,
             userDetails._id,
             selectedChat.chatID,
-            customPrompt,
+            customPrompt || newMessageDetails.selectedText || "Image analysis",
             completeData.cleanContent,
             completeData.content,
             populatedSources,
@@ -499,7 +521,6 @@ User Context: ${
               contentBox,
               removeSelectedContent
             );
-            alert("Oops! looks like something went wrong🤦‍♀️");
             return;
           }
 
@@ -523,15 +544,9 @@ User Context: ${
             panel2: null,
             panel3: null,
           };
+          imageContainer.innerHTML = "";
         } catch (err) {
           console.warn("Error while completing the message process");
-          console.error(err.message);
-        } finally {
-          loadingAiResponse = false;
-          populatingSourcesLoading = false;
-          sendBtn.innerHTML = `<img alt="send" src="./assets/send.svg" />`;
-          stopResponseStreaming = false;
-          responseStreamingStatus = false;
         }
       }
     );
@@ -543,8 +558,12 @@ User Context: ${
       contentBox,
       removeSelectedContent
     );
-    console.log(err);
-    alert("Oops! something went wrong");
+  } finally {
+    loadingAiResponse = false;
+    populatingSourcesLoading = false;
+    sendBtn.innerHTML = `<img alt="send" src="./assets/send.svg" />`;
+    stopResponseStreaming = false;
+    responseStreamingStatus = false;
   }
 }
 
@@ -559,8 +578,6 @@ async function updateContent() {
       noContentElement.textContent = "Error retrieving content.";
       return;
     }
-
-    console.log({ response });
 
     if (!response.contentType) return;
     handleSelectedActionType(queryTypes, response);
@@ -601,7 +618,11 @@ async function updateContent() {
       imgTag.alt = "image";
       div.appendChild(imgTag);
       imageContainer.appendChild(div);
-      const { secureURL } = await uploadToCloudinary(response.imageUrl);
+      const { secureURL } = await uploadToCloudinary(
+        response.imageUrl,
+        {},
+        sendBtn
+      );
       imgTag.src = secureURL;
       UPLOADED_DOCUMENTS.push(secureURL);
     }
