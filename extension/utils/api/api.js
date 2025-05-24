@@ -42,6 +42,7 @@ export async function fetchAllChats(userID) {
     let chats = await response.json();
     return chats.data;
   } catch (err) {
+    console.warn("MAKE SURE THE SERVER IS UP AND RUNNNG...")
     showToast("Oops! something went wrong while fetching the chats", "error")
   }
 }
@@ -214,6 +215,7 @@ export async function fetchAIResponse(
       });
     } else {
       console.error("Fetch error:", err);
+      console.warn("MAKE SURE THE SERVER IS UP AND RUNNNG...")
       if (abortController) {
         abortController.abort();
       }
