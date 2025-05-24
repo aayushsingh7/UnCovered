@@ -113,7 +113,13 @@ This app requests the following Google OAuth scopes:
 - **Backend**: Node.js + Express
 - **AI Power**: Perplexity Sonar API
 - **Database**: MongoDB
-- **Authentication**: Secure token-based auth
+- **Cloud Storage** - Cloudinary for image upload
+- **Authentication**: Google OAuth 2.0 (one-time login for identity verification)  
+  - User authenticates via Google to share name, email, and profile picture  
+  - Retrieved data is stored in Chrome `storage.local` with a `lastLoggedInDate`  
+  - On each visit, the app checks if the login has expired based on custom logic  
+  - If expired or missing, the user is prompted to log in again via Google
+
 
 ---
 
