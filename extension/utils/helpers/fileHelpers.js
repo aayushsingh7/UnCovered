@@ -50,19 +50,21 @@ export async function handleUploadFile(
   UPLOADED_DOCUMENTS,
   sendBtn
 ) {
-  handleShowContentBox(contentBox, removeSelectedContent);
+ try {
+   handleShowContentBox(contentBox, removeSelectedContent);
   imageContainer.style.display = "flex";
   newMessageDetails.selectedText = "";
   textElement.style.display = "none";
   const base64 = await fileToBase64(e.target.files[0]);
-  const extension = e.target.files[0].name.slice(
-    e.target.files[0].name.lastIndexOf(".")
-  );
+  const extension = e.target.files[0].name
+    .slice(e.target.files[0].name.lastIndexOf(".") + 1)
+    .toLowerCase();
+
   if (
-    extension == ".PNG" ||
-    extension == ".JPG" ||
-    extension == ".WEBP" ||
-    extension == ".JPEG"
+    extension == "png" ||
+    extension == "jpg" ||
+    extension == "webp" ||
+    extension == "jpeg"
   ) {
     let div = document.createElement("div");
     let imgTag = document.createElement("img");
@@ -81,10 +83,11 @@ export async function handleUploadFile(
       removeSelectedContent.style.display = "none";
     }
   } else {
-    showToast("Only PNG, JPG, JPEG & WEBP are supported", "info");
-    contentBox.style.display = "none";
-    removeSelectedContent.style.display = "none";
+    showToast("Only PNG, JPG, JPEG & WEBP are supported", "warning");
   }
+ } catch (err) {
+  showToast("Oops! something went wrong while uploading file, try again!","error")
+ }
 }
 
 export async function uploadToCloudinary(base64Data, options = {}, sendBtn) {

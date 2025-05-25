@@ -654,6 +654,14 @@ h1 {
   -webkit-user-drag: none;
 }
 
+.login span {
+  color:  #d3ac0e;;
+  font-size: 15px;
+  text-align: center;
+  margin-top: 20px;
+  padding: 20px;
+}
+
 .login {
   height: 95dvh;
 }
@@ -1011,20 +1019,20 @@ img {
   font-size: 14px;
   opacity: 0;
   transform: translateX(100%);
-  animation: slideIn 0.4s forwards, fadeOut 0.4s ease 2.6s forwards;
+  animation: slideIn 0.4s forwards, fadeOut 0.4s ease 4.6s forwards;
 }
 
 .toast.success {
-  background-color: #2ecc71;
+  background-color: #29bb66;
 }
 .toast.error {
-  background-color: #e74c3c;
+  background-color: #c63929;
 }
 .toast.info {
   background-color: #3498db;
 }
 .toast.warning {
-  background-color: #f1c40f;
+  background-color: #d3ac0e;
   color: #000;
 }
 
@@ -1040,4 +1048,12 @@ img {
     opacity: 0;
     transform: translateX(100%);
   }
+}
+
+.d{
+  font-size: #f1f1f1;
+  padding: 10px;
+  margin-top: 10px;
+  font-size: 14px;
+  text-align: center;
 }

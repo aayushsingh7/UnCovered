@@ -34,7 +34,11 @@ import {
   handleUploadFile,
   uploadToCloudinary,
 } from "./utils/helpers/fileHelpers.js";
-import { fetchSourceDetails, replaceWithClickableLink, showToast } from "./utils/utils.js";
+import {
+  fetchSourceDetails,
+  replaceWithClickableLink,
+  showToast,
+} from "./utils/utils.js";
 
 let textElement,
   imageContainer,
@@ -145,14 +149,15 @@ export function handleNewChatBtnClick({
   );
   highlightSelectedChat("new-chat", chatsContainer);
   searchTextarea.value = "";
-  selectedChat = {};
+  selectedChat.chatID = null;
+  selectedChat.title = ""
   handleSelectedActionType(queryTypes, { actionType: "quick-search" });
 }
 
 function handleDeepResearchClick(e) {
   e.stopPropagation();
   deepResearchStatus = !deepResearchStatus;
-  showToast("Changes saved successfully!","success")
+  showToast("Changes saved successfully!", "success");
   updateToggle(deepResearch, deepResearchStatus);
   chrome.storage.local.set({ deepResearch: deepResearchStatus });
 }
@@ -161,7 +166,7 @@ function handleQuickSearchClick(e) {
   e.stopPropagation();
   quickSearchStatus = !quickSearchStatus;
   updateToggle(quickSearch, quickSearchStatus);
-   showToast("Changes saved successfully!","success")
+  showToast("Changes saved successfully!", "success");
   chrome.storage.local.set({ quickSearch: quickSearchStatus });
 }
 
@@ -169,7 +174,7 @@ function handleFactCheckClick(e) {
   e.stopPropagation();
   factCheckStatus = !factCheckStatus;
   updateToggle(factCheck, factCheckStatus);
-   showToast("Changes saved successfully!","success")
+  showToast("Changes saved successfully!", "success");
   chrome.storage.local.set({ factCheck: factCheckStatus });
 }
 
@@ -205,7 +210,7 @@ function refreshElements() {
   uploadFileBtn = document.getElementById("upload-btn");
 
   UPLOADED_DOCUMENTS.length = 0;
-  imageContainer.innerHTML = ""
+  imageContainer.innerHTML = "";
 
   if (userDetails.email) {
     const elements = {
@@ -307,7 +312,8 @@ function refreshElements() {
           refreshElements,
           UPLOADED_DOCUMENTS,
           imageContainer,
-          queryTypes
+          queryTypes,
+          CHAT_HISTORY
         ),
       searchChatsAndMessages: (e) =>
         searchChatsAndMessages(e, userDetails, chatsContainer, chatsMap),
@@ -352,6 +358,7 @@ function extractLinks(body) {
 }
 
 async function addNewMessage(customPrompt) {
+  let prevSelectedActionType = newMessageDetails.actionType;
   responseStreamingStatus = true;
   let populatingSourcesLoading = false;
   sendBtn.innerHTML = `<img alt="pause" src="./assets/pause.svg" />`;
@@ -360,9 +367,6 @@ async function addNewMessage(customPrompt) {
     customPrompt + " " + newMessageDetails.selectedText
   );
 
-  if (CHAT_HISTORY.length > 5) {
-    CHAT_HISTORY = CHAT_HISTORY.slice(2);
-  }
   const introTemplate = document.getElementById("intro");
   if (introTemplate && window.getComputedStyle(introTemplate).display == "flex")
     introTemplate.style.display = "none";
@@ -490,7 +494,10 @@ User Context: ${
             removeSelectedContent
           );
           messagesContainer.removeChild(newMessageBox);
-          showToast("Oops! cannot process your request at this moment😥","error")
+          showToast(
+            "Oops! cannot process your request at this moment😥",
+            "error"
+          );
           return;
         }
         try {
@@ -531,9 +538,13 @@ User Context: ${
           };
           CHAT_HISTORY.push(ASSISTANT_MESSAGE);
 
+          if (CHAT_HISTORY.length > 6) {
+            CHAT_HISTORY.splice(0, CHAT_HISTORY.length - 6);
+          }
+
           newMessageDetails = {
             selectedText: "",
-            actionType: "",
+            actionType: prevSelectedActionType,
           };
 
           resultsContainerObj = {
@@ -559,6 +570,7 @@ User Context: ${
       removeSelectedContent
     );
   } finally {
+    UPLOADED_DOCUMENTS.length = 0;
     loadingAiResponse = false;
     populatingSourcesLoading = false;
     sendBtn.innerHTML = `<img alt="send" src="./assets/send.svg" />`;

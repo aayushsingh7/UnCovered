@@ -80,7 +80,7 @@ export function generateRandomId() {
   return id;
 }
 
-export function showToast(message, type = "info", duration = 3000) {
+export function showToast(message, type = "info") {
   const container = document.getElementById("toastContainer");
   const toast = document.createElement("div");
   toast.className = `toast ${type}`;
@@ -90,5 +90,5 @@ export function showToast(message, type = "info", duration = 3000) {
 
   setTimeout(() => {
     toast.remove();
-  }, duration);
+  }, 5000);
 }

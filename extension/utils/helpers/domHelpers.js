@@ -537,7 +537,7 @@ function renderMessages(messages) {
       let rawHTML = replaceWithClickableLink(message.answer, message.sources);
       rawHTML = marked.parse(rawHTML);
       return `
-    <div class="new-message">
+    <div>
       <div id="random-id-placeholder" class="content-box message-box">
         <div class="content-type">
         ${
@@ -647,7 +647,8 @@ export async function handleChatBoxClick(
   refreshElements,
   UPLOADED_DOCUMENTS,
   imageContainer,
-  queryTypes
+  queryTypes,
+  CHAT_HISTORY
 ) {
   const chatElement = e.target.closest(".chat");
   if (!chatElement) return;
@@ -659,7 +660,8 @@ export async function handleChatBoxClick(
     e.stopPropagation();
     deleteChat(chatID, sideNavbar);
     chatsContainer.removeChild(chatElement);
-    selectedChat = {};
+    selectedChat.chatID = null;
+    selectedChat.title = ""
     handleNewChatBtnClick({
       messagesContainer,
       refreshElements,
@@ -677,9 +679,40 @@ export async function handleChatBoxClick(
     return;
   }
   sideNavbar.classList.remove("show-sidenav");
-  selectedChat = chat;
+  selectedChat.chatID = chat.chatID;
+  selectedChat.title = chat.title;
   highlightSelectedChat(chatID, chatsContainer);
   const messages = await fetchMessages(chatID);
+
+  messages.forEach((message) => {
+    const USER_MESSAGE = {
+      role: "user",
+      content: [
+        {
+          type: "text",
+          text: `Query Type: ${message.actionType}
+User Prompt: ${message.prompt}
+User Context: ${message.selectedText || "No Additional Context Provided"}`,
+        },
+        ...message.documents.map((imageLink) => ({
+          type: "image_url",
+          image_url: { url: imageLink },
+        })),
+      ],
+    };
+
+    const ASSISTANT_MESSAGE = {
+      role: "assistant",
+      content: `Answer: ${message.responseRawJSON}`,
+    };
+
+    CHAT_HISTORY.push(USER_MESSAGE, ASSISTANT_MESSAGE);
+  });
+
+  if (CHAT_HISTORY.length > 6) {
+    CHAT_HISTORY.splice(0, CHAT_HISTORY.length - 6);
+  }
+
   messagesContainer.innerHTML = "";
   messagesContainer.innerHTML = renderMessages(messages);
   messagesContainer.querySelectorAll("pre code").forEach((block) => {
@@ -694,6 +727,7 @@ export async function handleChatBoxClick(
     contentBox,
     removeSelectedContent
   );
+  selectedChat = chat;
 }
 
 export function highlightSelectedChat(chatID, chatsContainer) {

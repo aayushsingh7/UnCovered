@@ -341,6 +341,6 @@ export async function searchChatsAndMessages(
   } catch (err) {
     console.error(err);
     chatsContainer.innerHTML =
-      "<p>Error loading search results. Please try again.</p>";
+      `<p class="d">Error loading search results. Please try again.</p>`;
   }
 }

@@ -29,7 +29,7 @@ export async function fetchUserInfo(token) {
       return result.loggedInUser;
     });
   } catch (err) {
-    showToast("Oops! something went wrong while fetching user info","error")
+    showToast("Oops! something went wrong while fetching user info", "error");
     return null;
   }
 }
@@ -49,7 +49,9 @@ export async function getUserInfo() {
         return user;
       }
     }
-    document.body.innerHTML = `<div class="login">
+    document.body.innerHTML = `
+    <div class="toast-container" id="toastContainer"></div>
+    <div class="login" id="login">
       <h2>FactSnap Authentication</h2>
       <p>Please Wait, while we verify you...</p>
     </div>`;
@@ -63,7 +65,7 @@ export async function getUserInfo() {
     });
     return await fetchUserInfo(token);
   } catch (error) {
-    showToast("User authentication failed, try again", "error")
+    showToast("User authentication failed, try again", "error");
     console.error("Authentication failed:", error);
     return null;
   }
@@ -80,6 +82,9 @@ export async function verifyOrCreateUser(userInfo) {
     const user = await response.json();
     return user;
   } catch (err) {
-    showToast("Cannot verify the user at this moment","error")
+    showToast("(For Organizers) Make sure the server is up and running.","warning")
+    let span = document.createElement("span")
+    span.innerText = "After verifying the server is up and runnig, please close the extension and restart"
+    document.getElementById("login").appendChild(span)
   }
 }
