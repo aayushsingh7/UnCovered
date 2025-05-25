@@ -170,7 +170,7 @@ export async function fetchAIResponse(
                 }
               }
             } catch (err) {
-              console.warn("Failed to parse SSE chunk:", jsonString, err);
+              // ignore
             }
           }
         }

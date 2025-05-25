@@ -255,6 +255,7 @@ export function createSourceBox(fetchLinkDetails) {
 
   const sourceLink = document.createElement("a");
   sourceLink.href = fetchLinkDetails.url;
+  sourceLink.target = "_blank"
   sourceLink.className = "source-link";
   sourceLink.textContent = fetchLinkDetails.url;
 
@@ -269,6 +270,7 @@ export function createSourceBox(fetchLinkDetails) {
 
   const headline = document.createElement("a");
   headline.textContent = fetchLinkDetails.title;
+  headline.target = "_blank"
 
   const description = document.createElement("p");
   description.textContent = fetchLinkDetails.description;
@@ -508,7 +510,7 @@ export function newChatLayout(userInfo) {
       <div class="input-container-options">
       <div class="query-types">
   
-  <input type="file" id="upload-input" style="display: none;" />
+  <input type="file" id="upload-input" style="display: none;" accept="image/*"  />
 <span data-name="upload-file" title="Upload File" id="upload-btn">
   <img src="./assets/add.svg" alt=""/>
 </span>

@@ -138,7 +138,7 @@ export function handleNewChatBtnClick({
     </div>
   `;
   sideNavbar.classList.remove("show-sidenav");
-  // refreshElements();
+  CHAT_HISTORY.length = 0;
   newMessageDetails.actionType = "quick-search";
   handleRemoveSelectedContent(
     contentBox,
@@ -480,8 +480,7 @@ User Context: ${
             }
           }
         } catch (err) {
-          console.warn("Error while streamining");
-          console.error(err.message);
+          showToast("Oops! something went wrong while generating answer", "error")
         }
       },
       async (completeData) => {
@@ -557,7 +556,7 @@ User Context: ${
           };
           imageContainer.innerHTML = "";
         } catch (err) {
-          console.warn("Error while completing the message process");
+          showToast("Cannot save message at this moment", "error")
         }
       }
     );
@@ -675,8 +674,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   chrome.runtime.onMessage.addListener((message) => {
     if (
-      message.action === "contentUpdated" ||
-      message.action === "textUpdated"
+      message.action === "contentUpdated" 
     ) {
       searchTextarea.value = "";
       updateContent();

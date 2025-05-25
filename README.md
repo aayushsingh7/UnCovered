@@ -162,16 +162,17 @@ This app requests the following Google OAuth scopes:
    MONGODB_URI=your_mongodb_connection_string_here
    ```
 
-4. **Load Chrome Extension**
+4. **Start the server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Load Chrome Extension**
 
    - Open `chrome://extensions/`
    - Enable "Developer mode"
    - Click "Load unpacked" → Select the `client` folder
 
-5. **Start the server**
-   ```bash
-   npm run dev
-   ```
 
 **That's it!** FactSnap is now running in your browser.
 

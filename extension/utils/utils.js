@@ -39,7 +39,6 @@ export async function fetchSourceDetails(url) {
       publisher: sourceData.publisher,
     };
   } catch (err) {
-    console.warn("Cannot retrieve source details");
     return {
       title: "",
       image: {

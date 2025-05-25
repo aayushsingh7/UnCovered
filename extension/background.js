@@ -67,11 +67,15 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       },
       () => {
         chrome.sidePanel.open({ tabId: tab.id }).then(() => {
-          chrome.runtime.sendMessage({
-            action: "contentUpdated",
-            type: contentSourceType,
-            actionType: actionType,
-          });
+          chrome.runtime
+            .sendMessage({
+              action: "contentUpdated",
+              type: contentSourceType,
+              actionType: actionType,
+            })
+            .catch(() => {
+              // Ignore errors if receiver doesn't exist yet
+            });
         });
       }
     );
