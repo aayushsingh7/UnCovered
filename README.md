@@ -74,55 +74,70 @@ UnCovered eliminates friction from fact-checking with **3-click verification**:
 - **Auto-mode**: 3-click instant results
 - **Custom prompt**: Add your own context for enhanced precision
 
-<img src="https://res.cloudinary.com/dvk80x6fi/image/upload/v1748000389/file_2025-05-23_11.39.22_cdqxbv.png" alt="user-flow"/>
+<img src="https://res.cloudinary.com/dvk80x6fi/image/upload/v1748276656/final-diagram_zssp87.png" alt="user-flow"/>
 
 ---
 
-## 🚀 Key Features
+## 🚀 Key Features – Why **UnCovered** is a Game-Changer
 
-| Feature                        | Description                                                                            |
-| ------------------------------ | -------------------------------------------------------------------------------------- |
-| **⚡ 3-Click Verification**    | Select text/link → Right-click → UnCovered → Choose mode                                |
-| **🎯 Multiple Search Modes**   | Quick Search, Fact-Check, Deep Research for text; Quick Search & Fact-Check for images |
-| **🖼️ Image Analysis**          | Right-click any image → UnCovered → Instant verification                                |
-| **📸 Screen Capture**          | Extension toolbar → Capture Screen → Analyze content                                   |
-| **🌐 Website Analysis**        | Paste any URL → Get summary or fact-check entire pages (right click also works)        |
-| **📚 Citation-Backed Results** | All answers powered by Perplexity's reliable sources                                   |
-| **🎨 Clean Interface**         | Non-intrusive, seamless browsing experience                                            |
+| Feature                         | Description                                                                                 |
+| -------------------------------| ------------------------------------------------------------------------------------------- |
+| **⚡ 3-Click Verification**     | Select text or link → Right-click → UnCovered → Choose analysis mode                       |
+| **🎯 Multiple Search Modes**    | Text: Quick Search, Fact-Check, Deep Research<br>Image: Quick Search, Fact-Check           |
+| **🖼️ Image Analysis**           | Right-click any image → UnCovered → Choose mode → Instantly verify claims within visual content          |
+| **📸 Screenshot-Based Fact-Checking** | Capture videos, infographics, or any on-screen content → Analyze with AI-powered accuracy |
+| **🌐 Website/Link Analysis**     | Paste or right-click any URL → Get summaries or full-page fact-checks                      |
+| **📚 Citation-Backed Results**  | Every response includes trusted citations powered by Perplexity Sonar Pro & Reasoning Pro |
+| **🧠 AI-Augmented Reasoning**   | Delivers contextual insights, not just keyword matches—deep understanding, fast results    |
+| **🎨 Clean, Seamless Interface**| Lightweight Chrome extension that stays out of the way while delivering powerful tools     |
+
+---
+
+## 🔍 Competitor Comparison – What Makes **UnCovered** Truly Unique
+
+Most fact-checking tools are limited to text or basic link analysis. **UnCovered** redefines the space with advanced capabilities no other tool offers:
+
+- 🖼️ **Advanced Image & Screenshot Analysis**  
+  Instantly fact-check memes, charts, infographics, or visual claims—just right-click or capture your screen.
+
+- 🎥 **Video & Infographic Verification via Screenshots**  
+  Take a snapshot of any frame and let **UnCovered** analyze visual misinformation on the fly.
+
+- ⚡ **Multi-Mode Intelligence**  
+  Choose from _Quick Search_, _Fact-Check_, or _Deep Research_—adapt to context and urgency.
+
+- 🧠 **Backed by Perplexity's Best AI Models**  
+  Uses Sonar Pro & Reasoning Pro to ensure source-backed, nuanced understanding of complex topics.
+
+- 📎 **Real-Time Browser Integration**  
+  Runs where you browse—no copy-pasting, no context-switching, just click and check.
+
+- 🧩 **Scalable & Modular Architecture**  
+  Built to expand with features like PDF analysis, voice input, and more—future-proof by design.
 
 ---
 
-## 🔍 Competitor Comparison – What Makes UnCovered Unique
+## 🔗 The All-in-One Fact-Checking Toolkit Competitors Can’t Match
 
-While similar fact-checking tools exist, **UnCovered** sets itself apart through:
+| Feature                                                    | **UnCovered** | Other Tools |
+|-------------------------------------------------------------|:-------------:|:------------:|
+| 🔍 **Image Analysis** (e.g., memes, photos)                 | ✅            | ⚠️           |
+| 📸 **Real-Time Screenshot Verification** (e.g., infographics, video frames) | ✅ | ❌           |
+| 🎯 **Multiple Fact Modes** (Quick / Fact-Check / Deep)      | ✅            | ⚠️           |
+| 🌐 **Website/Link Analysis** (Right-click or Paste)         | ✅            | ⚠️           |
+| 🧠 **Citation-Backed, Contextual Results**                  | ✅            | ❌           |
+| ⚡ **Real-Time Chrome Integration**                         | ✅            | ✅           |
+| 🧩 **Modular Backend** (Future: PDF, Voice, etc.)           | ✅            | ❌           |
 
-- 🖼️ **Image & Screenshot Analysis**  
-  Verify content directly from visuals, not just plain text—something most competitors don't support.
+**Legend:**  
+✅ = Full support ⚠️ = Partial/limited support ❌ = Not supported
 
-- ⚡ **Three Smart Modes**  
-  Choose the right depth of analysis with _Quick Search_, _Fact-Check_, and _Deep Research_ modes.
+> 🧠 Most tools support just 1–2 features—and often incompletely. **UnCovered** gives you a seamless, all-in-one fact-checking experience across text, images, screenshots, and more.
 
-- 🧠 **Powered by Perplexity Sonar Pro & Reasoning Pro (with Citations)**  
-  Leverages top-tier AI models to provide reliable, contextual, and source-backed insights.
-
-- 📎 **Real-Time Contextual Insights in a Chrome Extension**  
-  Seamlessly integrated where users browse, making fact-checking instant and non-disruptive.
-
-- 🧩 **Modular & Future-Ready Backend**  
-  Designed to support upcoming features like PDF fact-checking, video content analysis, and voice input.
-
-
-- #### 🔗 At a Glance
-
-   | Feature                      | **UnCovered** | Other Tools |
-   | ---------------------------- | ------------ | ----------- |
-   | Image/Screenshot Analysis    | ✅           | ❌          |
-   | Multiple Fact Modes          | ✅           | ❌          |
-   | Real-Time Chrome Integration | ✅           | ✅          |
-   | Results Based on Citations   | ✅           | ❌          |
-   | Modular Backend for Upgrades | ✅           | ❌          |
 
 ---
+
+
 
 ## ✨ Sonar Models & APIs Used
 
