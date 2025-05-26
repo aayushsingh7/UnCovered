@@ -76,7 +76,7 @@ let responseStreamingStatus = false;
 
 let newMessageDetails = {
   selectedText: "",
-  actionType: "",
+  actionType: "quick-search",
 };
 
 let resultsContainerObj = {
@@ -150,7 +150,7 @@ export function handleNewChatBtnClick({
   highlightSelectedChat("new-chat", chatsContainer);
   searchTextarea.value = "";
   selectedChat.chatID = null;
-  selectedChat.title = ""
+  selectedChat.title = "";
   handleSelectedActionType(queryTypes, { actionType: "quick-search" });
 }
 
@@ -394,12 +394,28 @@ async function addNewMessage(customPrompt) {
       searchTextarea,
       prevCustomInput,
       contentBox,
-      removeSelectedContent
+      removeSelectedContent,
+      newMessageDetails
     );
     messagesContainer.scrollTo({
       top: newMessageBox.offsetTop - 80,
       behavior: "smooth",
     });
+
+    let userContext;
+
+    if (newMessageDetails.selectedText) {
+      userContext = newMessageDetails.selectedText;
+    } else if (UPLOADED_DOCUMENTS.length > 0 && LINKS.length > 0) {
+      userContext =
+        "Analyze all the given images & links to fulfill user query";
+    } else if (UPLOADED_DOCUMENTS.length > 0) {
+      userContext = "Analyze all the given images to fulfill user query";
+    } else if (LINKS.length > 0) {
+      userContext = "Analyze all the given links to fulfill user query";
+    } else {
+      userContext = "No Additional Context Provided";
+    }
 
     const USER_MESSAGE = {
       role: "user",
@@ -408,9 +424,7 @@ async function addNewMessage(customPrompt) {
           type: "text",
           text: `Query Type: ${newMessageDetails.actionType}
 User Prompt: ${customPrompt}
-User Context: ${
-            newMessageDetails.selectedText || "No Additional Context Provided"
-          }`,
+User Context: ${userContext}`,
         },
         ...LINKS.map((link) => ({
           type: "text",
@@ -462,13 +476,14 @@ User Context: ${
             }</div>`;
           }
           if (data.citations.length > 0 && !populatingSourcesLoading) {
+            if (!resultsContainerObj.panel2) return;
             populatingSourcesLoading = true;
             resultsContainerObj.tab2.style.display = "block";
             resultsContainerObj.panel2.innerHTML += `<div class="loading-sources"><div class="loader-1"></div></div>`;
             resultsContainerObj.tab2.style.display = "block";
             data.citations.map(async (source, index) => {
               const populatedSource = await fetchSourceDetails(source);
-              resultsContainerObj.panel2.appendChild(
+              resultsContainerObj?.panel2?.appendChild(
                 createSourceBox(populatedSource)
               );
               populatedSources.push(populatedSource);
@@ -480,17 +495,22 @@ User Context: ${
             }
           }
         } catch (err) {
-          showToast("Oops! something went wrong while generating answer", "error")
+          showToast(
+            "Oops! something went wrong while generating answer",
+            "error"
+          );
         }
       },
       async (completeData) => {
         if (!completeData.content) {
+          CHAT_HISTORY.pop();
           handleContentBoxDisplay(
             "show",
             searchTextarea,
             prevCustomInput,
             contentBox,
-            removeSelectedContent
+            removeSelectedContent,
+            newMessageDetails
           );
           messagesContainer.removeChild(newMessageBox);
           showToast(
@@ -525,8 +545,11 @@ User Context: ${
               searchTextarea,
               prevCustomInput,
               contentBox,
-              removeSelectedContent
+              removeSelectedContent,
+              newMessageDetails
             );
+            messagesContainer.removeChild(newMessageBox);
+            showToast("Cannot save the message at this moment!");
             return;
           }
 
@@ -556,7 +579,7 @@ User Context: ${
           };
           imageContainer.innerHTML = "";
         } catch (err) {
-          showToast("Cannot save message at this moment", "error")
+          showToast("Cannot save message at this moment", "error");
         }
       }
     );
@@ -566,7 +589,8 @@ User Context: ${
       searchTextarea,
       prevCustomInput,
       contentBox,
-      removeSelectedContent
+      removeSelectedContent,
+      newMessageDetails
     );
   } finally {
     UPLOADED_DOCUMENTS.length = 0;
@@ -673,9 +697,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   );
 
   chrome.runtime.onMessage.addListener((message) => {
-    if (
-      message.action === "contentUpdated" 
-    ) {
+    if (message.action === "contentUpdated") {
       searchTextarea.value = "";
       updateContent();
     }

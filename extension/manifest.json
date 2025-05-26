@@ -1,5 +1,5 @@
 {
-  "name": "FactSnap",
+  "name": "UnCovered",
   "version": "1.0",
   "manifest_version": 3,
   "permissions": ["contextMenus", "sidePanel", "storage", "activeTab", "identity","scripting"],
@@ -12,7 +12,7 @@
   },
   "host_permissions": ["<all_urls>"],
   "action": {
-    "default_title": "FactSnap",
+    "default_title": "UnCovered",
     "default_icon": "./assets/main-logo.PNG"
   },
   "background": {

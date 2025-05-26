@@ -42,8 +42,11 @@ export async function fetchAllChats(userID) {
     let chats = await response.json();
     return chats.data;
   } catch (err) {
-    console.warn("MAKE SURE THE SERVER IS UP AND RUNNNG...")
-    showToast("Oops! something went wrong while fetching the chats", "error")
+    showToast("Oops! something went wrong while fetching the chats", "error");
+    showToast(
+      "(For Organizers) Make sure the server is up and running.",
+      "warning"
+    );
   }
 }
 
@@ -60,7 +63,7 @@ export async function fetchMessages(chatID, offset = 0) {
     let messages = await response.json();
     return messages.data;
   } catch (err) {
-    showToast("Oops! something went wrong while fetching messages","error")
+    showToast("Oops! something went wrong while fetching messages", "error");
   }
 }
 
@@ -214,8 +217,10 @@ export async function fetchAIResponse(
         verdict: verdict,
       });
     } else {
-      console.error("Fetch error:", err);
-      console.warn("MAKE SURE THE SERVER IS UP AND RUNNNG...")
+      showToast(
+        "(For Organizers) Make sure the server is up and running.",
+        "warning"
+      );
       if (abortController) {
         abortController.abort();
       }
@@ -282,7 +287,7 @@ export async function addNewMessageToDB(
       newChat: data.newChat,
     };
   } catch (err) {
-    showToast("Oops! something went wrong while saving the message😥","error")
+    showToast("Oops! something went wrong while saving the message😥", "error");
   }
 }
 
@@ -295,9 +300,9 @@ export async function deleteChat(chatID, sideNavbar) {
     });
     let data = await response.json();
     sideNavbar.classList.remove("show-sidenav");
-    showToast("Chat deleted successfully!", "success")
+    showToast("Chat deleted successfully!", "success");
   } catch (err) {
-    showToast("Cannot delete the chat at this momemt😥","error")
+    showToast("Cannot delete the chat at this momemt😥", "error");
   }
 }
 
@@ -339,8 +344,6 @@ export async function searchChatsAndMessages(
       });
     }
   } catch (err) {
-    console.error(err);
-    chatsContainer.innerHTML =
-      `<p class="d">Error loading search results. Please try again.</p>`;
+    chatsContainer.innerHTML = `<p class="d">Error loading search results. Please try again.</p>`;
   }
 }

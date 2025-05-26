@@ -1,37 +1,61 @@
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
-    id: "factSnapTextParent",
-    title: "FactSnap",
+    id: "uncoveredTextParent",
+    title: "UnCovered",
     contexts: ["selection", "link", "image"],
   });
 
   chrome.contextMenus.create({
-    id: "factSnapTextQuickSearch",
-    parentId: "factSnapTextParent",
+    id: "uncoveredTextQuickSearch",
+    parentId: "uncoveredTextParent",
     title: "Quick Search - Instant answers",
     contexts: ["selection", "link", "image"],
   });
 
   chrome.contextMenus.create({
-    id: "factSnapTextCheckFacts",
-    parentId: "factSnapTextParent",
+    id: "uncoveredTextCheckFacts",
+    parentId: "uncoveredTextParent",
     title: "Check Facts - Verify information",
     contexts: ["selection", "link", "image"],
   });
 
   chrome.contextMenus.create({
-    id: "factSnapTextDeepResearch",
-    parentId: "factSnapTextParent",
+    id: "uncoveredTextDeepResearch",
+    parentId: "uncoveredTextParent",
     title: "Deep Research - Comprehensive analysis",
     contexts: ["selection", "link"],
   });
 });
 
+chrome.action.onClicked.addListener((tab) => {
+  chrome.storage.local.set(
+    {
+      selectedText: null,
+      contentType: "default",
+      actionType: "quick-search",
+      selectedImage: null,
+    },
+    () => {
+      chrome.sidePanel.open({ tabId: tab.id }).then(() => {
+        chrome.runtime
+          .sendMessage({
+            action: "contentUpdated",
+            type: "default",
+            actionType: "quick-search",
+          })
+          .catch(() => {
+            // Ignore errors if receiver doesn't exist yet
+          });
+      });
+    }
+  );
+});
+
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (
-    info.menuItemId === "factSnapTextCheckFacts" ||
-    info.menuItemId === "factSnapTextDeepResearch" ||
-    info.menuItemId === "factSnapTextQuickSearch"
+    info.menuItemId === "uncoveredTextCheckFacts" ||
+    info.menuItemId === "uncoveredTextDeepResearch" ||
+    info.menuItemId === "uncoveredTextQuickSearch"
   ) {
     let contentToAnalyze;
     let contentSourceType;
@@ -50,11 +74,11 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     }
 
     let actionType;
-    if (info.menuItemId === "factSnapTextCheckFacts") {
+    if (info.menuItemId === "uncoveredTextCheckFacts") {
       actionType = "fact-check";
-    } else if (info.menuItemId === "factSnapTextQuickSearch") {
+    } else if (info.menuItemId === "uncoveredTextQuickSearch") {
       actionType = "quick-search";
-    } else if (info.menuItemId === "factSnapTextDeepResearch") {
+    } else if (info.menuItemId === "uncoveredTextDeepResearch") {
       actionType = "deep-research";
     }
 
@@ -90,7 +114,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({
           text: data.selectedText || null,
           imageUrl: data.selectedImage || null,
-          contentType: data.contentType || "text",
+          contentType: data.contentType || "default",
           actionType: data.actionType || "quick-search",
         });
       }

@@ -102,7 +102,7 @@ export async function uploadToCloudinary(base64Data, options = {}, sendBtn) {
   sendBtn.innerHTML = `<div class="loader-1 loader-btn"></div>`;
   const {
     cloudName = "dvk80x6fi",
-    uploadPreset = "factsnap",
+    uploadPreset = "uncovered",
     folder = "",
     resourceType = "auto",
   } = options;

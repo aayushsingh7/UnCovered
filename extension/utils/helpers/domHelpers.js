@@ -52,11 +52,14 @@ export function handleContentBoxDisplay(
   searchTextarea,
   prevCustomInput,
   contentBox,
-  removeSelectedContent
+  removeSelectedContent,
+  newMessageDetails
 ) {
   if (type === "show") {
     searchTextarea.value = prevCustomInput ? prevCustomInput : "";
-    handleShowContentBox(contentBox, removeSelectedContent);
+    if (newMessageDetails.selectedText) {
+      handleShowContentBox(contentBox, removeSelectedContent);
+    }
   } else {
     searchTextarea.value = "";
     contentBox.classList.remove("show-content-box");
@@ -255,7 +258,7 @@ export function createSourceBox(fetchLinkDetails) {
 
   const sourceLink = document.createElement("a");
   sourceLink.href = fetchLinkDetails.url;
-  sourceLink.target = "_blank"
+  sourceLink.target = "_blank";
   sourceLink.className = "source-link";
   sourceLink.textContent = fetchLinkDetails.url;
 
@@ -270,7 +273,7 @@ export function createSourceBox(fetchLinkDetails) {
 
   const headline = document.createElement("a");
   headline.textContent = fetchLinkDetails.title;
-  headline.target = "_blank"
+  headline.target = "_blank";
 
   const description = document.createElement("p");
   description.textContent = fetchLinkDetails.description;
@@ -421,7 +424,7 @@ export function newChatLayout(userInfo) {
     <header class="header">
       <nav>
         <img src="./assets/menu.svg" alt="" id="menu" />
-        <h3>FactSnap</h3>
+        <h3>UnCovered</h3>
         <div>
         <img src="./assets/capture-ss.svg" title="Capture Screen" alt="ss" id="captureBtn" />
         </div>
@@ -500,7 +503,7 @@ export function newChatLayout(userInfo) {
           </div>
           <div id="no-content" class="no-selection">
             No content selected. Please select text or an image on a webpage,
-            right-click, and choose a FactSnap option.
+            right-click, and choose a UnCovered option.
           </div>
         </div>
       </div>
@@ -654,7 +657,7 @@ export async function handleChatBoxClick(
 ) {
   const chatElement = e.target.closest(".chat");
   if (!chatElement) return;
-
+  CHAT_HISTORY.length = 0;
   const chatID = chatElement.id;
   const chat = chatsMap.get(chatID);
   messagesContainer.innerHTML = `<div class="loading-sources"><div class="loader"></div></div>`;
@@ -663,7 +666,7 @@ export async function handleChatBoxClick(
     deleteChat(chatID, sideNavbar);
     chatsContainer.removeChild(chatElement);
     selectedChat.chatID = null;
-    selectedChat.title = ""
+    selectedChat.title = "";
     handleNewChatBtnClick({
       messagesContainer,
       refreshElements,
@@ -681,8 +684,8 @@ export async function handleChatBoxClick(
     return;
   }
   sideNavbar.classList.remove("show-sidenav");
-  selectedChat.chatID = chat.chatID;
-  selectedChat.title = chat.title;
+  selectedChat.chatID = chat?.chatID;
+  selectedChat.title = chat?.title;
   highlightSelectedChat(chatID, chatsContainer);
   const messages = await fetchMessages(chatID);
 
@@ -727,7 +730,8 @@ User Context: ${message.selectedText || "No Additional Context Provided"}`,
     searchTextarea,
     prevCustomInput,
     contentBox,
-    removeSelectedContent
+    removeSelectedContent,
+    newMessageDetails
   );
   selectedChat = chat;
 }

@@ -1,8 +1,8 @@
-# FactSnap - Because truth shouldn't be hard to find.
+# UnCovered - Because truth shouldn't be hard to find.
 
 **Stop misinformation in its tracks — three clicks, instant truth for anything you see on the web**
 
-FactSnap is a revolutionary Chrome extension that brings real-time fact-checking, quick search, and deep research directly to your browsing experience. No copy-pasting. No new tabs. Just right-click — and know the truth.
+UnCovered is a revolutionary Chrome extension that brings real-time fact-checking, quick search, and deep research directly to your browsing experience. No copy-pasting. No new tabs. Just right-click — and know the truth.
 
 ---
 
@@ -23,7 +23,7 @@ It’s not just me. These problems are everywhere:
 
 **The result?** Misinformation spreads because fact-checking is just too slow and inconvenient.
 
-That’s why I built **FactSnap** — select text → right-click → verify.  
+That’s why I built **UnCovered** — select text → right-click → verify.  
 No tab-switching, no effort. Just truth, instantly.
 
 ### 📈 Some Stats
@@ -46,12 +46,12 @@ No tab-switching, no effort. Just truth, instantly.
 
 ## 💡 The Solution
 
-FactSnap eliminates friction from fact-checking with **3-click verification**:
+UnCovered eliminates friction from fact-checking with **3-click verification**:
 
 ### For Text & Website Analysis 📝
 
 1. **Select** any text/link on any webpage
-2. **Right-click** → **FactSnap** → Choose from 3 options:
+2. **Right-click** → **UnCovered** → Choose from 3 options:
    - 🔍 **Quick Search** - Get instant context and information
    - ✅ **Fact-Check** - Get clear verdict: True/False/Unconfirmed
    - 🔬 **Deep Research** - Comprehensive analysis with citations
@@ -59,13 +59,13 @@ FactSnap eliminates friction from fact-checking with **3-click verification**:
 ### For Images 🖼️
 
 1. **Right-click** on any image
-2. **FactSnap** → Choose from 2 options:
+2. **UnCovered** → Choose from 2 options:
    - 🔍 **Quick Search** - AI-powered image analysis and context
    - ✅ **Fact-Check** - Image verification and misinformation detection
 
 ### Screen Capture 📸
 
-1. **Click FactSnap extension icon** in toolbar
+1. **Click UnCovered extension icon** in toolbar
 2. **Select "Capture Screen"** button
 3. **Analyze** visual content for misinformation instantly
 
@@ -82,13 +82,45 @@ FactSnap eliminates friction from fact-checking with **3-click verification**:
 
 | Feature                        | Description                                                                            |
 | ------------------------------ | -------------------------------------------------------------------------------------- |
-| **⚡ 3-Click Verification**    | Select text/link → Right-click → FactSnap → Choose mode                                |
+| **⚡ 3-Click Verification**    | Select text/link → Right-click → UnCovered → Choose mode                                |
 | **🎯 Multiple Search Modes**   | Quick Search, Fact-Check, Deep Research for text; Quick Search & Fact-Check for images |
-| **🖼️ Image Analysis**          | Right-click any image → FactSnap → Instant verification                                |
+| **🖼️ Image Analysis**          | Right-click any image → UnCovered → Instant verification                                |
 | **📸 Screen Capture**          | Extension toolbar → Capture Screen → Analyze content                                   |
 | **🌐 Website Analysis**        | Paste any URL → Get summary or fact-check entire pages (right click also works)        |
 | **📚 Citation-Backed Results** | All answers powered by Perplexity's reliable sources                                   |
 | **🎨 Clean Interface**         | Non-intrusive, seamless browsing experience                                            |
+
+---
+
+## 🔍 Competitor Comparison – What Makes UnCovered Unique
+
+While similar fact-checking tools exist, **UnCovered** sets itself apart through:
+
+- 🖼️ **Image & Screenshot Analysis**  
+  Verify content directly from visuals, not just plain text—something most competitors don't support.
+
+- ⚡ **Three Smart Modes**  
+  Choose the right depth of analysis with _Quick Search_, _Fact-Check_, and _Deep Research_ modes.
+
+- 🧠 **Powered by Perplexity Sonar Pro & Reasoning Pro (with Citations)**  
+  Leverages top-tier AI models to provide reliable, contextual, and source-backed insights.
+
+- 📎 **Real-Time Contextual Insights in a Chrome Extension**  
+  Seamlessly integrated where users browse, making fact-checking instant and non-disruptive.
+
+- 🧩 **Modular & Future-Ready Backend**  
+  Designed to support upcoming features like PDF fact-checking, video content analysis, and voice input.
+
+
+- #### 🔗 At a Glance
+
+   | Feature                      | **UnCovered** | Other Tools |
+   | ---------------------------- | ------------ | ----------- |
+   | Image/Screenshot Analysis    | ✅           | ❌          |
+   | Multiple Fact Modes          | ✅           | ❌          |
+   | Real-Time Chrome Integration | ✅           | ✅          |
+   | Results Based on Citations   | ✅           | ❌          |
+   | Modular Backend for Upgrades | ✅           | ❌          |
 
 ---
 
@@ -114,18 +146,17 @@ This app requests the following Google OAuth scopes:
 - **AI Power**: Perplexity Sonar API
 - **Database**: MongoDB
 - **Cloud Storage** - Cloudinary for image upload
-- **Authentication**: Google OAuth 2.0 (one-time login for identity verification)  
-  - User authenticates via Google to share name, email, and profile picture  
-  - Retrieved data is stored in Chrome `storage.local` with a `lastLoggedInDate`  
-  - On each visit, the app checks if the login has expired based on custom logic  
+- **Authentication**: Google OAuth 2.0 (one-time login for identity verification)
+  - User authenticates via Google to share name, email, and profile picture
+  - Retrieved data is stored in Chrome `storage.local` with a `lastLoggedInDate`
+  - On each visit, the app checks if the login has expired based on custom logic
   - If expired or missing, the user is prompted to log in again via Google
-
 
 ---
 
 ## 🎪 Live Demo
 
-[Here's the live demo of FactSnap](https://youtu.be/mBQtaIPVOTs)
+[Here's the live demo of UnCovered](https://youtu.be/mBQtaIPVOTs)
 
 ---
 
@@ -142,8 +173,8 @@ This app requests the following Google OAuth scopes:
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/aayushsingh7/FactSnap.git
-   cd FactSnap
+   git clone https://github.com/aayushsingh7/UnCovered.git
+   cd UnCovered
    ```
 
 2. **Install dependencies**
@@ -163,6 +194,7 @@ This app requests the following Google OAuth scopes:
    ```
 
 4. **Start the server**
+
    ```bash
    npm run dev
    ```
@@ -173,14 +205,13 @@ This app requests the following Google OAuth scopes:
    - Enable "Developer mode"
    - Click "Load unpacked" → Select the `client` folder
 
-
-**That's it!** FactSnap is now running in your browser.
+**That's it!** UnCovered is now running in your browser.
 
 ---
 
 ## 🎯 Target Audience
 
-**Everyone suffers from misinformation.** FactSnap is built for:
+**Everyone suffers from misinformation.** UnCovered is built for:
 
 - 📱 **Social Media Users** - Verify viral posts instantly
 - 📰 **News Readers** - Check article claims in real-time
@@ -198,20 +229,20 @@ This app requests the following Google OAuth scopes:
 
 ---
 
-## 🧠 How Perplexity Powers FactSnap
+## 🧠 How Perplexity Powers UnCovered
 
-FactSnap leverages **Perplexity Sonar API** (`sonar-pro` for quick-search & fact-check And `sonar-deep-research` for deep-research) to revolutionize real-time searching &fact-checking and make the world a better place:
+UnCovered leverages **Perplexity Sonar API** (`sonar-pro` for quick-search & fact-check And `sonar-deep-research` for deep-research) to revolutionize real-time searching &fact-checking and make the world a better place:
 
 ### 🔄 **The Magic Behind Every Click**
 
-1. **User Interaction**: When you select text/image or paste a URL, FactSnap captures your query
+1. **User Interaction**: When you select text/image or paste a URL, UnCovered captures your query
 2. **Smart Query Processing**: Our backend intelligently formats your request for optimal Perplexity analysis
 3. **Perplexity Sonar API**:
    - **For Text**: Analyzes claims against real-time, authoritative sources
    - **For Images**: Uses multimodal AI to understand visual content and verify claims
    - **For URLs**: Crawls and analyzes entire webpage content
 4. **Citation-Rich Results**: Perplexity returns comprehensive answers with credible source links
-5. **Intelligent Formatting**: FactSnap presents results in digestible formats (True/False/Unconfirmed verdicts)
+5. **Intelligent Formatting**: UnCovered presents results in digestible formats (True/False/Unconfirmed verdicts)
 
 ### 🌍 **Making the World Better Through AI**
 
@@ -225,7 +256,7 @@ FactSnap leverages **Perplexity Sonar API** (`sonar-pro` for quick-search & fact
 
 ---
 
-## 🏆 Why FactSnap Will Win
+## 🏆 Why UnCovered Will Win
 
 ### 🎯 **Solves a Real Problem**
 
@@ -233,7 +264,7 @@ Misinformation is a global crisis. We make verification effortless.
 
 ### ⚡ **Revolutionary UX**
 
-First solution to make fact-checking as simple as right-click → FactSnap → verify.
+First solution to make fact-checking as simple as right-click → UnCovered → verify.
 
 ### 🔬 **Powered by Perplexity**
 
@@ -264,8 +295,8 @@ We welcome contributions! Here's how to get started:
 
 ## 📧 Contact & Support
 
-- **GitHub**: [aayushsingh7/FactSnap](https://github.com/aayushsingh7/FactSnap)
-- **Issues**: Report bugs or request features in our [Issues](https://github.com/aayushsingh7/FactSnap/issues) section
+- **GitHub**: [aayushsingh7/UnCovered](https://github.com/aayushsingh7/UnCovered.git)
+- **Issues**: Report bugs or request features in our [Issues](https://github.com/aayushsingh7/UnCovered/issues) section
 
 ---
 
@@ -279,6 +310,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### 🌟 Built with ❤️ for a misinformation-free world
 
-**FactSnap - Because truth shouldn't be hard to find.**
+**UnCovered - Because truth shouldn't be hard to find.**
 
 </div>

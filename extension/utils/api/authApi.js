@@ -52,7 +52,7 @@ export async function getUserInfo() {
     document.body.innerHTML = `
     <div class="toast-container" id="toastContainer"></div>
     <div class="login" id="login">
-      <h2>FactSnap Authentication</h2>
+      <h2>UnCovered Authentication</h2>
       <p>Please Wait, while we verify you...</p>
     </div>`;
     const token = await new Promise((resolve, reject) => {
