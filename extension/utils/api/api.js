@@ -347,3 +347,17 @@ export async function searchChatsAndMessages(
     chatsContainer.innerHTML = `<p class="d">Error loading search results. Please try again.</p>`;
   }
 }
+
+export async function generateReply(messageID) {
+  try {
+    const response = await fetch(`${API_URL}/ai/genereate-reply`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messageID }),
+    });
+    let data= await response.json();
+    return data.data;
+  } catch (err) {
+    showToast("Oops! something went wrong while generating reply");
+  }
+}

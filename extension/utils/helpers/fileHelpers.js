@@ -119,7 +119,6 @@ export async function uploadToCloudinary(base64Data, options = {}, sendBtn) {
     formData.append("folder", folder);
   }
 
-  // Make the API request to Cloudinary
   try {
     const response = await fetch(
       `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
@@ -131,11 +130,7 @@ export async function uploadToCloudinary(base64Data, options = {}, sendBtn) {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(
-        `Cloudinary upload failed: ${
-          errorData.error?.message || "Unknown error"
-        }`
-      );
+      return;
     }
 
     const data = await response.json();
@@ -144,8 +139,7 @@ export async function uploadToCloudinary(base64Data, options = {}, sendBtn) {
       secureURL: data.secure_url,
     };
   } catch (error) {
-    console.error("Error uploading to Cloudinary:", error);
-    throw error;
+    showToast("Oops! something went wrong while upload the image", "error");
   } finally {
     sendBtn.disabled = false;
     sendBtn.innerHTML = `<img alt="send" src="./assets/send.svg" />`;

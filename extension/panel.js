@@ -4,7 +4,6 @@ export const API_URL = "http://localhost:4000/api/v1";
 import {
   addNewMessageToDB,
   fetchAIResponse,
-  fetchAllChats,
   searchChatsAndMessages,
 } from "./utils/api/api.js";
 import { getUserInfo } from "./utils/api/authApi.js";
@@ -17,6 +16,7 @@ import {
   handleChatBoxClick,
   handleCloseMenuBarClick,
   handleContentBoxDisplay,
+  handleGeneratedReply,
   handleMenuBarClick,
   handleQueryTypeClick,
   handleRemoveSelectedContent,
@@ -65,7 +65,9 @@ let textElement,
   analyzeScreenBtn,
   uploadFileInput,
   uploadFileBtn,
-  searchChatsAndMessagesInput;
+  searchChatsAndMessagesInput,
+  generatedReplyContainer,
+  generatedReplyBox;
 
 let userDetails = {};
 let selectedChat = {};
@@ -208,9 +210,21 @@ function refreshElements() {
   analyzeScreenBtn = document.getElementById("captureBtn");
   uploadFileInput = document.getElementById("upload-input");
   uploadFileBtn = document.getElementById("upload-btn");
+  generatedReplyContainer = document.getElementById(
+    "generated-reply-container"
+  );
+  generatedReplyBox = document.getElementById("generated-box");
 
   UPLOADED_DOCUMENTS.length = 0;
   imageContainer.innerHTML = "";
+
+  function stopClickPropagation(e) {
+    if (e.target.closest("button")) return;
+    e.stopPropagation();
+  }
+
+  generatedReplyBox.removeEventListener("click", stopClickPropagation);
+  generatedReplyBox.addEventListener("click", stopClickPropagation);
 
   if (userDetails.email) {
     const elements = {
@@ -231,6 +245,7 @@ function refreshElements() {
       analyzeScreenBtn,
       chatsContainer,
       searchChatsAndMessagesInput,
+      generatedReplyContainer,
     };
 
     updateToggle(factCheck, factCheckStatus);
@@ -317,6 +332,7 @@ function refreshElements() {
         ),
       searchChatsAndMessages: (e) =>
         searchChatsAndMessages(e, userDetails, chatsContainer, chatsMap),
+      handleGeneratedReply: (e) => handleGeneratedReply("hide"),
     };
 
     removeListeners(elements, handlers);
@@ -341,6 +357,16 @@ document.addEventListener("click", function (event) {
       );
       if (activePanel) activePanel.style.display = "block";
     }
+  }
+});
+
+document.addEventListener("click", async function (e) {
+  if (e.target.classList.contains("generate-reply-btn")) {
+    const button = e.target;
+    const container = e.target.closest(".content-box");
+    button.innerHTML = "Generating Reply...";
+    await handleGeneratedReply("show", container.id);
+    button.innerHTML = "Generate Reply";
   }
 });
 
@@ -446,7 +472,7 @@ User Context: ${userContext}`,
       customPrompt,
       newMessageDetails.actionType,
       CHAT_HISTORY,
-      (data) => {
+      async (data) => {
         try {
           loadingAiResponse = false;
           let replaceWithLink = replaceWithClickableLink(
@@ -460,6 +486,7 @@ User Context: ${userContext}`,
             .forEach((block) => {
               hljs.highlightElement(block);
             });
+
           if (
             data.verdict &&
             contentType.childNodes.length == 1 &&
@@ -475,26 +502,47 @@ User Context: ${userContext}`,
                 : "Not Confirmed"
             }</div>`;
           }
-          if (data.citations.length > 0 && !populatingSourcesLoading) {
+
+          if (
+            data.citations.length > 0 &&
+            resultsContainerObj.panel2.childNodes.length <
+              data.citations.length &&
+            !populatingSourcesLoading
+          ) {
             if (!resultsContainerObj.panel2) return;
+
             populatingSourcesLoading = true;
             resultsContainerObj.tab2.style.display = "block";
             resultsContainerObj.panel2.innerHTML += `<div class="loading-sources"><div class="loader-1"></div></div>`;
-            resultsContainerObj.tab2.style.display = "block";
-            data.citations.map(async (source, index) => {
+
+            const fetchPromises = data.citations.map(async (source, index) => {
+              await new Promise((resolve) => setTimeout(resolve, index * 1000));
               const populatedSource = await fetchSourceDetails(source);
-              resultsContainerObj?.panel2?.appendChild(
+              resultsContainerObj.panel2.appendChild(
                 createSourceBox(populatedSource)
               );
               populatedSources.push(populatedSource);
+              return populatedSource;
             });
+
+            await Promise.allSettled(fetchPromises);
+
             const loadingElem =
               resultsContainerObj.panel2.querySelector(".loading-sources");
             if (loadingElem) {
               resultsContainerObj.panel2.removeChild(loadingElem);
             }
+
+            populatingSourcesLoading = false;
           }
         } catch (err) {
+          populatingSourcesLoading = false;
+          const loadingElem =
+            resultsContainerObj.panel2?.querySelector(".loading-sources");
+          if (loadingElem) {
+            resultsContainerObj.panel2.removeChild(loadingElem);
+          }
+
           showToast(
             "Oops! something went wrong while generating answer",
             "error"
@@ -502,6 +550,10 @@ User Context: ${userContext}`,
         }
       },
       async (completeData) => {
+        while (populatingSourcesLoading) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+
         if (!completeData.content) {
           CHAT_HISTORY.pop();
           handleContentBoxDisplay(
@@ -519,6 +571,7 @@ User Context: ${userContext}`,
           );
           return;
         }
+
         try {
           newMessageBox.classList.remove("new-message");
           const { newChat, newMessage } = await addNewMessageToDB(
@@ -534,11 +587,13 @@ User Context: ${userContext}`,
             customPrompt,
             newMessageDetails.actionType
           );
+
           if (newChat != null) {
             selectedChat = newChat;
             chatsContainer.prepend(createChatBox(newChat));
             highlightSelectedChat(newChat.chatID, chatsContainer);
           }
+
           if (!newMessage) {
             handleContentBoxDisplay(
               "show",
@@ -549,7 +604,7 @@ User Context: ${userContext}`,
               newMessageDetails
             );
             messagesContainer.removeChild(newMessageBox);
-            showToast("Cannot save the message at this moment!");
+            showToast("Cannot save the message at this moment! (!newMessage)");
             return;
           }
 
@@ -563,7 +618,17 @@ User Context: ${userContext}`,
           if (CHAT_HISTORY.length > 6) {
             CHAT_HISTORY.splice(0, CHAT_HISTORY.length - 6);
           }
-
+          if (newMessageDetails.actionType == "fact-check") {
+            const generateReplyDiv = document.createElement("div");
+            generateReplyDiv.className = "generate-reply";
+            const generateReplyBtn = document.createElement("button");
+            generateReplyBtn.textContent = "Generate Reply";
+            generateReplyBtn.id = "generate-reply-btn";
+            generateReplyBtn.classList = "generate-reply-btn";
+            generateReplyDiv.appendChild(generateReplyBtn);
+            resultsContainerObj.panel1.appendChild(generateReplyDiv);
+            newMessageBox.firstElementChild.id = newMessage._id;
+          }
           newMessageDetails = {
             selectedText: "",
             actionType: prevSelectedActionType,
@@ -593,6 +658,7 @@ User Context: ${userContext}`,
       newMessageDetails
     );
   } finally {
+    // Clean up
     UPLOADED_DOCUMENTS.length = 0;
     loadingAiResponse = false;
     populatingSourcesLoading = false;

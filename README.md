@@ -1,4 +1,4 @@
-# UnCovered - Because truth shouldn't be hard to find.
+# UnCoveredAI - Because truth shouldn't be hard to find.
 
 **Stop misinformation in its tracks — three clicks, instant truth for anything you see on the web**
 
@@ -6,25 +6,23 @@ UnCovered is a revolutionary Chrome extension that brings real-time fact-checkin
 
 ---
 
-## 🎯 The Problem I'm Solving
+## 🧩 The Problem
 
 In today’s digital age, misinformation spreads faster than ever — not just during major events like conflicts or elections, but **every single day**.
 
-From AI-generated images and deepfakes to fake headlines and out-of-context quotes, our feeds are flooded with misleading content. It’s becoming harder and harder to tell what’s real.
+From AI-generated images and deepfakes to fake headlines and out-of-context quotes, our feeds are flooded with misleading content. And now, it’s not just text — **infographics, screenshots, viral videos, and visual edits** are weaponized to mislead.
 
-I saw this firsthand during the recent India-Pakistan tensions — my social media was filled with AI-generated visuals, fake news clips, and viral claims. But even outside of that, I still encounter suspicious content on a daily basis.
+I saw this firsthand during the recent India-Pakistan tensions — my social media was filled with AI-generated visuals, fake news clips, and viral claims. But even outside of that, I still encounter suspicious content daily.
 
 It’s not just me. These problems are everywhere:
 
-- **AI-generated content** makes it hard to separate fact from fiction
-- **Verified tools exist** (like ChatGPT, Perplexity) — but using them breaks your flow:  
-  pause what you're doing → copy the claim → open a new tab → find the right tool → paste → run the search → scroll through a long response → decide what’s true
-- **People want instant verification** without leaving the page or losing focus
+- **AI-generated content** makes it hard to separate fact from fiction  
+- **Most tools only support text**, or at best, basic image analysis — **no screenshots, no video frames, no real-time capture**  
+- Even trusted tools (like ChatGPT, Perplexity) break your flow:  
+  pause → copy → switch tab → paste → read long output → decide  
+- **People want instant, trusted verification** across all content types — without leaving the page
 
-**The result?** Misinformation spreads because fact-checking is just too slow and inconvenient.
-
-That’s why I built **UnCovered** — select text → right-click → verify.  
-No tab-switching, no effort. Just truth, instantly.
+**The result?** Misinformation spreads because fact-checking is too fragmented, slow, and inconvenient.
 
 ### 📈 Some Stats
 
@@ -44,37 +42,43 @@ No tab-switching, no effort. Just truth, instantly.
 
 ---
 
-## 💡 The Solution
+## ✅ The Solution: UnCovered
 
-UnCovered eliminates friction from fact-checking with **3-click verification**:
+That’s why I built **UnCovered** — one tool that verifies **text, images, screenshots, websites, and more** — instantly.
+
+- Right-click → verify anything  
+- No switching tabs  
+- No juggling multiple tools  
+- Just **trustworthy, contextual answers** — backed by citations.
 
 ### For Text & Website Analysis 📝
 
-1. **Select** any text/link on any webpage
-2. **Right-click** → **UnCovered** → Choose from 3 options:
-   - 🔍 **Quick Search** - Get instant context and information
-   - ✅ **Fact-Check** - Get clear verdict: True/False/Unconfirmed
-   - 🔬 **Deep Research** - Comprehensive analysis with citations
+1. **Select** any text/link on any webpage  
+2. **Right-click** → **UnCovered** → Choose from 3 options:  
+   - 🔍 **Quick Search** – Get instant context and information  
+   - ✅ **Fact-Check** – Get clear verdict: True/False/Unconfirmed  
+   - 🔬 **Deep Research** – Comprehensive analysis with citations  
 
 ### For Images 🖼️
 
-1. **Right-click** on any image
-2. **UnCovered** → Choose from 2 options:
-   - 🔍 **Quick Search** - AI-powered image analysis and context
-   - ✅ **Fact-Check** - Image verification and misinformation detection
+1. **Right-click** on any image  
+2. **UnCovered** → Choose from 2 options:  
+   - 🔍 **Quick Search** – AI-powered image analysis and context  
+   - ✅ **Fact-Check** – Image verification and misinformation detection  
 
 ### Screen Capture 📸
 
-1. **Click UnCovered extension icon** in toolbar
-2. **Select "Capture Screen"** button
-3. **Analyze** visual content for misinformation instantly
+1. **Click UnCovered extension icon** in toolbar  
+2. **Select "Capture Screen"** button  
+3. **Analyze** visual content for misinformation instantly  
 
 ### Customization 🎛️
 
-- **Auto-mode**: 3-click instant results
-- **Custom prompt**: Add your own context for enhanced precision
+- **Auto-mode** – 3-click instant results  
+- **Custom prompt** – Add your own context for enhanced precision  
+- **🗣️ Instant Counter-Response Generator** – Get a concise, human-like reply based on verified facts that you can post directly to correct misinformation in real time  
 
-<img src="https://res.cloudinary.com/dvk80x6fi/image/upload/v1748276656/final-diagram_zssp87.png" alt="user-flow"/>
+<img src="https://res.cloudinary.com/dvk80x6fi/image/upload/v1748276656/final-diagram_zssp87.png" alt="User Flow Diagram"/>
 
 ---
 
@@ -84,14 +88,31 @@ UnCovered eliminates friction from fact-checking with **3-click verification**:
 | -------------------------------| ------------------------------------------------------------------------------------------- |
 | **⚡ 3-Click Verification**     | Select text or link → Right-click → UnCovered → Choose analysis mode                       |
 | **🎯 Multiple Search Modes**    | Text: Quick Search, Fact-Check, Deep Research<br>Image: Quick Search, Fact-Check           |
-| **🖼️ Image Analysis**           | Right-click any image → UnCovered → Choose mode → Instantly verify claims within visual content          |
+| **🖼️ Image Analysis**           | Right-click any image → UnCovered → Choose mode → Instantly verify claims within visual content |
 | **📸 Screenshot-Based Fact-Checking** | Capture videos, infographics, or any on-screen content → Analyze with AI-powered accuracy |
 | **🌐 Website/Link Analysis**     | Paste or right-click any URL → Get summaries or full-page fact-checks                      |
 | **📚 Citation-Backed Results**  | Every response includes trusted citations powered by Perplexity Sonar Pro & Reasoning Pro |
 | **🧠 AI-Augmented Reasoning**   | Delivers contextual insights, not just keyword matches—deep understanding, fast results    |
+| **🗣️ Instant Counter-Response Generator** | Auto-generate a concise, fact-based rebuttal you can share to inform others              |
 | **🎨 Clean, Seamless Interface**| Lightweight Chrome extension that stays out of the way while delivering powerful tools     |
 
 ---
+
+## ❌ Why Current Tools Fall Short
+
+| Tool / Extension | Supports Text | Supports Image | Supports Video / Infographic | Verdicts | Screenshots | Summary + Citations |
+|------------------|---------------|----------------|-------------------------------|----------|-------------|----------------------|
+| **Google / Bing** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Reverse Image Search** | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Snopes / FactCheck.org** | ✅ | ❌ | ❌ | ✅ (only for known claims) | ❌ | ✅ |
+| **InVID / WeVerify** | ❌ | ✅ | ✅ (complex tools) | ❌ | ❌ | ❌ |
+| **AI Assistants (ChatGPT, Gemini)** | ✅ | Partial | Partial | ❌ | ❌ | ✅ |
+| **Fact-check extensions (like CheckGPT, SurfSafe)** | ✅ | Some | ❌ | ❌ | ❌ | Partial |
+
+🛑 None of them support all content types — **text, images, videos, infographics, AND websites** — in one tool, with fact verdicts, citations, and instant context.
+
+---
+
 
 ## 🔍 Competitor Comparison – What Makes **UnCovered** Truly Unique
 
@@ -107,10 +128,13 @@ Most fact-checking tools are limited to text or basic link analysis. **UnCovered
   Choose from _Quick Search_, _Fact-Check_, or _Deep Research_—adapt to context and urgency.
 
 - 🧠 **Backed by Perplexity's Best AI Models**  
-  Uses Sonar Pro & Reasoning Pro to ensure source-backed, nuanced understanding of complex topics.
+  Uses Sonar Pro & Sonar Deep Research to ensure source-backed, nuanced understanding of complex topics.
 
-- 📎 **Real-Time Browser Integration**  
+- 🧩 **Real-Time Chrome Integration**  
   Runs where you browse—no copy-pasting, no context-switching, just click and check.
+
+- 🗣️ **Human-Like Rebuttal Generator**  
+  Create shareable, persuasive responses to misinformation instantly—perfect for social or community platforms.
 
 - 🧩 **Scalable & Modular Architecture**  
   Built to expand with features like PDF analysis, voice input, and more—future-proof by design.
@@ -127,10 +151,12 @@ Most fact-checking tools are limited to text or basic link analysis. **UnCovered
 | 🌐 **Website/Link Analysis** (Right-click or Paste)         | ✅            | ⚠️           |
 | 🧠 **Citation-Backed, Contextual Results**                  | ✅            | ❌           |
 | ⚡ **Real-Time Chrome Integration**                         | ✅            | ✅           |
-| 🧩 **Modular Backend** (Future: PDF, Voice, etc.)           | ✅            | ❌           |
+| 🗣️ **Human-Like Counter-Answers**                           | ✅            | ❌           |
+| 🧩 **Modular Backend** (Future: PDF, Voice, etc.)           | ✅            | N/A           |
 
 **Legend:**  
 ✅ = Full support ⚠️ = Partial/limited support ❌ = Not supported
+
 
 > 🧠 Most tools support just 1–2 features—and often incompletely. **UnCovered** gives you a seamless, all-in-one fact-checking experience across text, images, screenshots, and more.
 
@@ -143,7 +169,7 @@ Most fact-checking tools are limited to text or basic link analysis. **UnCovered
 
 - `sonar-pro`: Used for Quick Search and Fact-Checking
 - `sonar-deep-research`: Used for Deep Research
-- [Microlink.io](https://microlink.io/): Used to fetch source metadata (title, heading, description, logo)
+- [Microlink.io (Free tier)](https://microlink.io/): Used to fetch source metadata (title, heading, description, logo)
 
 ### 🔐 Google OAuth Scopes
 
@@ -171,7 +197,7 @@ This app requests the following Google OAuth scopes:
 
 ## 🎪 Live Demo
 
-[Here's the live demo of UnCovered](https://youtu.be/mBQtaIPVOTs)
+[Here's the live demo of UnCovered](https://youtu.be/WJxW91eu0fs)
 
 ---
 
@@ -237,16 +263,15 @@ This app requests the following Google OAuth scopes:
 
 ## 🔮 Future Roadmap
 
-- **📰 Personalized News Feed** - Curated, fact-checked content based on your interests
-- **📄 Document Upload Support** - Fact-check PDFs, documents, and files
-- **🤖 AI Content Detection** - Identify AI-generated text and images
-- **📊 Misinformation Analytics** - Track and visualize misinformation trends
+- 📰 **Personalized News Feed** – Curated, fact-checked content tailored to your interests
+- 📄 **Document Upload Support** – Fact-check PDFs, documents, and other file types
+- 🏅 **Community Awards System** – Reward users for exposing misinformation and verifying facts, encouraging active participation and critical thinking
 
 ---
 
 ## 🧠 How Perplexity Powers UnCovered
 
-UnCovered leverages **Perplexity Sonar API** (`sonar-pro` for quick-search & fact-check And `sonar-deep-research` for deep-research) to revolutionize real-time searching &fact-checking and make the world a better place:
+UnCovered leverages **Perplexity Sonar API** (`sonar-pro` for quick-search & fact-check And `sonar-deep-research` for deep-research) to revolutionize real-time searching & fact-checking and make the world a better place:
 
 ### 🔄 **The Magic Behind Every Click**
 

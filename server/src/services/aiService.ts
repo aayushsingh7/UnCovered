@@ -1,5 +1,8 @@
 import dotenv from "dotenv";
 import ChatService from "./chatService";
+import CustomError from "../../utils/customError";
+import Message from "../database/models/messageModel";
+import generateUserContext from "../../utils/userContext";
 dotenv.config();
 
 const SYSTEM_PROMPT = `**ALAWAYS RETURN RESPONSE IN MARKDOWN FORMAT USING HEADINGS, BULLET POINTS, TABLES, HIGHLIGHTING, ETC**.
@@ -20,12 +23,31 @@ Remember: For **general, emotional, or social queries** (e.g., "how are you?", "
 ## IMPORTANT: ALWAYS FOLLOW THE ABOVE FORMAT NO MATTER WHAT.
 `;
 
+const GENERATE_HUMAN_ANSWER = `You will be given a detailed fact-checking response (README-style, possibly with sources and images).
+
+Your task:
+- Write a short, human-like reply in natural, conversational language — like a thoughtful social media comment.
+- Be concise, clear, and respectful — avoid long paragraphs or overly technical language.
+- Focus on calmly correcting the main false or misleading claim with **just the key facts**.
+- Avoid aggressive words like “entirely false” — prefer softer phrasing like “inaccurate” or “not supported by evidence.”
+- Do NOT include inline references like [1], [2], or citation numbers.
+- Include source links ONLY IF essential to clarify or back up disputed facts.
+- If the image/text alone makes the truth obvious, you can skip sources.
+- If sources are needed, place them at the end under:
+  Sources:
+  - https://example.com/...
+- Do NOT invent or guess links — only use verified ones.
+- Always sound like a calm, informed person debunking misinformation — not robotic, sarcastic, or preachy.`;
+
+
 class AIService {
-  private chatService: any;
+  private chatService: ChatService;
   private model: any;
+  private message: any;
 
   constructor() {
     this.chatService = new ChatService();
+    this.message = Message;
   }
 
   public async *askPerplexity(
@@ -136,6 +158,61 @@ class AIService {
       yield `data: ${JSON.stringify({ error: error.message })}\n\n`;
       yield `data: [DONE]\n\n`;
       throw error;
+    }
+  }
+  public async generateHumanReply(messageID: string) {
+    try {
+      const message = await this.message.findOne({ _id: messageID });
+      if (!message)
+        throw new CustomError("No message exists with the given ID", 404);
+      const response = await fetch(
+        "https://api.perplexity.ai/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "sonar-pro",
+            messages: [
+              {
+                role: "system",
+                content: GENERATE_HUMAN_ANSWER,
+              },
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: `User Prompt: ${message.prompt}
+User Context: ${generateUserContext(message.selectedText, message.documents)}
+ANSWER: ${message.responseRawJSON}\n\n${message.sources
+                      .map(
+                        (source: any, index: number) =>
+                          `${index + 1}` + source.url
+                      )
+                      .join("\n")}`,
+                  },
+                  ...message.documents.map((imageLink: string) => ({
+                    type: "image_url",
+                    image_url: { url: imageLink },
+                  })),
+                ],
+              },
+            ],
+            temperature: 0.7,
+            max_tokens: 2000,
+          }),
+        }
+      );
+      const data = await response.json();
+      return data?.choices?.[0]?.message?.content;
+    } catch (err) {
+      throw new CustomError(
+        "Oops! something went wrng while generating human-like reply",
+        500
+      );
     }
   }
 }

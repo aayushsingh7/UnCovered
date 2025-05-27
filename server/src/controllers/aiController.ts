@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import AIService from "../services/aiService";
 
-
 export class AIController {
   private aiService: AIService;
   constructor() {
@@ -67,6 +66,22 @@ export class AIController {
           message: err.message || "something went wrong",
         });
       }
+    }
+  }
+  public async generateHumanReply(req: Request, res: Response) {
+    try {
+      const response = await this.aiService.generateHumanReply(
+        req.body.messageID
+      );
+      res.status(200).send({
+        success: true,
+        message: "Reply generated successfully",
+        data: response,
+      });
+    } catch (err: any) {
+      res
+        .status(err.statusCode || 500)
+        .send({ success: false, message: err.message });
     }
   }
 }

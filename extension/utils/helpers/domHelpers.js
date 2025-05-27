@@ -1,6 +1,11 @@
 import { marked } from "../../libs/marked.esm.js";
 import { handleNewChatBtnClick } from "../../panel.js";
-import { deleteChat, fetchAllChats, fetchMessages } from "../api/api.js";
+import {
+  deleteChat,
+  fetchAllChats,
+  fetchMessages,
+  generateReply,
+} from "../api/api.js";
 import { generateRandomId, replaceWithClickableLink } from "../utils.js";
 
 export function handleAdjustHeight(searchTextarea) {
@@ -92,11 +97,18 @@ export function removeListeners(
     settingsContainer,
     analyzeScreenBtn,
     chatsContainer,
+    generatedReplyContainer,
   },
   handlers
 ) {
   if (chatsContainer)
     chatsContainer.removeEventListener("click", handlers.handleChatBoxClick);
+
+  if (generatedReplyContainer)
+    generatedReplyContainer.removeEventListener(
+      "click",
+      handlers.handleGeneratedReply
+    );
 
   if (uploadFileBtn)
     uploadFileBtn.removeEventListener("click", handlers.handleUploadFile);
@@ -158,6 +170,7 @@ export function addListeners(
     analyzeScreenBtn,
     chatsContainer,
     searchChatsAndMessagesInput,
+    generatedReplyContainer,
   },
   handlers
 ) {
@@ -165,6 +178,12 @@ export function addListeners(
     searchChatsAndMessagesInput.addEventListener(
       "keydown",
       handlers.searchChatsAndMessages
+    );
+
+  if (generatedReplyContainer)
+    generatedReplyContainer.addEventListener(
+      "click",
+      handlers.handleGeneratedReply
     );
 
   if (chatsContainer)
@@ -299,7 +318,7 @@ export function createContentBox(
   mainBox.className = "new-message";
 
   const contentBox = document.createElement("div");
-  contentBox.id = `${randomId}`;
+  // contentBox.id = ;
   contentBox.className = "content-box";
   contentBox.classList.add("message-box");
 
@@ -395,6 +414,7 @@ export function createContentBox(
     panel3.style.display = "none";
     resultsContent.appendChild(panel3);
   }
+
   resultTabs.appendChild(tab2);
   resultsContainerObj.tab1 = tab1;
   resultsContainerObj.tab2 = tab2;
@@ -430,6 +450,20 @@ export function newChatLayout(userInfo) {
         </div>
       </nav>
     </header>
+
+    <div id="generated-reply-container">
+     <div class="generated-box" id="generated-box">
+     <div class="generated-reply-heading">
+      <h4>Generated Reply</h4>
+     </div>
+
+     <div id="generated-reply">
+     </div>
+     
+     </div>
+     </div>
+     
+    </div>
 
     <div class="settings-contanier" id="settings-contanier"">
       <div class="settings-box">
@@ -543,7 +577,7 @@ function renderMessages(messages) {
       rawHTML = marked.parse(rawHTML);
       return `
     <div>
-      <div id="random-id-placeholder" class="content-box message-box">
+      <div id=${message._id} class="content-box message-box">
         <div class="content-type">
         ${
           message.actionType != "user-query"
@@ -593,6 +627,14 @@ function renderMessages(messages) {
           <div class="results-content">
             <div class="tab-panel" data-tab="answer" style="display: block;">
               ${rawHTML}
+               ${
+                 message.actionType == "fact-check"
+                   ? `<div class="generate-reply">
+      <button id="generate-reply-btn" class="generate-reply-btn">Generate Reply</button>
+      </div>`
+                   : ""
+               }
+
             </div> 
                  <div
                    class="tab-panel attachments"
@@ -616,6 +658,9 @@ function renderMessages(messages) {
             </div>
           </div>
         </div>
+
+        
+    
       </div>
     </div>
     `;
@@ -744,4 +789,19 @@ export function highlightSelectedChat(chatID, chatsContainer) {
       chat.classList.remove("active-chat");
     }
   });
+}
+
+export async function handleGeneratedReply(type = "show", messageID) {
+  let genereatedReplyContainer = document.getElementById(
+    "generated-reply-container"
+  );
+  let generatedReply = document.getElementById("generated-reply");
+  if (type == "show") {
+    const reply = await generateReply(messageID);
+    genereatedReplyContainer.style.display = "flex";
+    generatedReply.innerText = reply;
+  } else {
+    genereatedReplyContainer.style.display = "none";
+    generatedReply.innerText = "";
+  }
 }

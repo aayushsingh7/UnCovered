@@ -66,7 +66,6 @@ export async function getUserInfo() {
     return await fetchUserInfo(token);
   } catch (error) {
     showToast("User authentication failed, try again", "error");
-    console.error("Authentication failed:", error);
     return null;
   }
 }

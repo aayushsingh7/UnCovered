@@ -36,10 +36,15 @@ body {
 
 .messages::-webkit-scrollbar,
 .chats::-webkit-scrollbar,
-.selected-text::-webkit-scrollbar {
+.selected-text::-webkit-scrollbar,
+#generated-reply::-webkit-scrollbar {
   background: #111111;
   width: 5px;
   color: #111111;
+}
+
+#generated-reply::-webkit-scrollbar {
+  width: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -655,7 +660,7 @@ h1 {
 }
 
 .login span {
-  color:  #d3ac0e;;
+  color: #d3ac0e;
   font-size: 15px;
   text-align: center;
   margin-top: 20px;
@@ -739,7 +744,8 @@ h1 {
   background: #222;
 }
 
-.settings-contanier {
+.settings-contanier,
+#generated-reply-container {
   height: 100%;
   display: flex;
   width: 100%;
@@ -751,6 +757,37 @@ h1 {
   left: 0%;
   z-index: 10000;
   display: none;
+}
+
+.generated-box {
+  max-height: 350px;
+  /* overflow-y: scroll; */
+  color: #f1f1f1;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  width: 90%;
+  max-width: 450px;
+  border: 2px solid #333;
+  background: #222;
+  border-radius: 10px;
+}
+
+.generated-reply-heading {
+  padding: 10px 15px;
+  font-weight: 600;
+  border-bottom: 2px solid #444;
+  font-size: 16px;
+  display: flex;
+  justify-content: space-between;
+}
+
+#generated-reply {
+  overflow-y: scroll;
+  padding: 10px 15px;
+  color: #c3c3c3;
+  font-size: 13px;
+  line-height: 20px;
 }
 
 .settings-box {
@@ -1050,10 +1087,21 @@ img {
   }
 }
 
-.d{
+.d {
   font-size: #f1f1f1;
   padding: 10px;
   margin-top: 10px;
   font-size: 14px;
   text-align: center;
+}
+
+#generate-reply-btn {
+  border: none;
+  appearance: none;
+  background: #f1f1f1;
+  padding: 7px 10px;
+  color: #111;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 5px;
 }
