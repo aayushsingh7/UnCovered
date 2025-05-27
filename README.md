@@ -1,4 +1,4 @@
-# UnCoveredAI - Because truth shouldn't be hard to find.
+# UnCovered - Because truth shouldn't be hard to find.
 
 **Stop misinformation in its tracks — three clicks, instant truth for anything you see on the web**
 
