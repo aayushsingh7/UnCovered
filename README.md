@@ -4,6 +4,13 @@
 
 UnCovered is a revolutionary Chrome extension that brings real-time fact-checking, quick search, and deep research directly to your browsing experience. No copy-pasting. No new tabs. Just right-click — and know the truth.
 
+
+### 🎥 Quick Previews
+
+| Text Verification | Image Fact-Check | Screenshot Analysis |
+|-------------------|------------------|---------------------|
+| ![](https://res.cloudinary.com/dvk80x6fi/image/upload/v1748375032/text-short-MadewithClipchamp-ezgif.com-video-to-gif-converter_gfn4n7.gif) | ![](https://res.cloudinary.com/dvk80x6fi/image/upload/v1748375032/image-short-final-ezgif.com-video-to-gif-converter_rkvb8r.gif) | ![](https://res.cloudinary.com/dvk80x6fi/image/upload/v1748375034/video-short-final-ezgif.com-video-to-gif-converter_nhlydr.gif) |
+
 ---
 
 ## 🧩 The Problem
