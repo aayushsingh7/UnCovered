@@ -1,6 +1,6 @@
 import { Schema, model } from "mongoose";
 
-const MessageSchema = new Schema(
+const messageSchema = new Schema(
   {
     chatID: { type: String, required: true },
     sender: { type: Schema.Types.ObjectId, ref: "User" },
@@ -39,8 +39,8 @@ const MessageSchema = new Schema(
   { timestamps: true }
 );
 
-MessageSchema.index({ plainAnswer: "text" });
-MessageSchema.index({ sender: 1 });
+messageSchema.index({ plainAnswer: "text" });
+messageSchema.index({ sender: 1 });
 
-const Message = model("Messages", MessageSchema);
+const Message = model("Messages", messageSchema);
 export default Message;
