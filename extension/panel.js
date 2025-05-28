@@ -609,6 +609,7 @@ User Context: ${userContext}`,
               newMessageDetails
             );
             messagesContainer.removeChild(newMessageBox);
+            CHAT_HISTORY.pop();
             showToast("Cannot save the message at this moment!", "error");
             return;
           }
