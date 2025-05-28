@@ -24,10 +24,14 @@ export async function fetchUserInfo(token) {
       },
     });
 
-    chrome.storage.local.get(["loggedInUser"], (result) => {
-      document.body.innerHTML = newChatLayout(result.loggedInUser);
-      return result.loggedInUser;
+    const user = await new Promise((resolve) => {
+      chrome.storage.local.get(["loggedInUser"], (result) => {
+        resolve(result.loggedInUser);
+      });
     });
+
+    document.body.innerHTML = newChatLayout(user);
+    return user;
   } catch (err) {
     showToast("Oops! something went wrong while fetching user info", "error");
     return null;
@@ -63,7 +67,8 @@ export async function getUserInfo() {
         resolve(token);
       });
     });
-    return await fetchUserInfo(token);
+    let userData = await fetchUserInfo(token);
+    return userData;
   } catch (error) {
     showToast("User authentication failed, try again", "error");
     return null;
@@ -81,9 +86,13 @@ export async function verifyOrCreateUser(userInfo) {
     const user = await response.json();
     return user;
   } catch (err) {
-    showToast("(For Organizers) Make sure the server is up and running.","warning")
-    let span = document.createElement("span")
-    span.innerText = "After verifying the server is up and runnig, please close the extension and restart"
-    document.getElementById("login").appendChild(span)
+    showToast(
+      "(For Organizers) Make sure the server is up and running.",
+      "warning"
+    );
+    let span = document.createElement("span");
+    span.innerText =
+      "After verifying the server is up and runnig, please close the extension and restart";
+    document.getElementById("login").appendChild(span);
   }
 }

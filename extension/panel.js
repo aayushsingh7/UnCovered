@@ -744,7 +744,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         result.factCheck == null
       ) {
         chrome.storage.local.set(
-          { deepResearch: false, quickSearch: true, factCheck: false },
+          { deepResearch: false, quickSearch: true, factCheck: true },
           (newRes) => {
             deepResearchStatus = newRes.deepResearch;
             quickSearchStatus = newRes.quickSearch;

@@ -7,12 +7,10 @@ class UserSerivce {
     this.user = User;
   }
   public async verifyOrCreateUser(userData: any) {
-    console.log({userData})
     try {
       let isUserAlreadyExists = await this.user.findOne({
         email: userData.email,
       });
-      console.log({isUserAlreadyExists})
       if (isUserAlreadyExists) {
         return {
           success: true,
@@ -31,7 +29,6 @@ class UserSerivce {
         };
       }
     } catch (err: any) {
-      console.log(err)
       throw new CustomError(err.message, 500);
     }
   }
