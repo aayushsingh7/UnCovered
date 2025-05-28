@@ -238,7 +238,8 @@ This app requests the following Google OAuth scopes:
    ```env
    PORT=4000
    PERPLEXITY_API_KEY=your_perplexity_api_key_here
-   MONGODB_URI=your_mongodb_connection_string_here
+   // use the below mongodb url
+   MONGODB_URI= mongodb+srv://demo-user:demo-user-password@cluster0.3egxckp.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
    ```
 
 4. **Start the server**

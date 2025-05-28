@@ -10,7 +10,7 @@ import { generateRandomId, replaceWithClickableLink } from "../utils.js";
 
 export function handleAdjustHeight(searchTextarea) {
   searchTextarea.style.height = "50px";
-  const scrollHeight = searchTextarea.scrollHeight;
+  const scrollHeight = searchTextarea.value ? searchTextarea.scrollHeight : 50;
   const newHeight = Math.min(Math.max(50, scrollHeight), 200);
   searchTextarea.style.height = newHeight + "px";
 }
@@ -48,6 +48,7 @@ export function handleSettingsContainerClick(settingsContainer) {
 }
 
 export function updateToggle(element, status) {
+  if (!element) return;
   element.innerText = Boolean(status) ? "ON" : "OFF";
   element.classList.toggle("on", Boolean(status));
 }
@@ -544,7 +545,7 @@ export function newChatLayout(userInfo) {
       </div>
 
      <div class="input-container">
-      <textarea id="search-input" style="overflow-y: auto; max-height: 150px; resize: none;" placeholder="Ask Anything..."></textarea>
+      <textarea id="search-input" style="overflow-y: auto; resize: none;" placeholder="Ask Anything..."></textarea>
       <div class="input-container-options">
       <div class="query-types">
   

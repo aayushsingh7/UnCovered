@@ -25,6 +25,7 @@ import {
   handleSettingsContainerClick,
   handleShowContentBox,
   highlightSelectedChat,
+  newChatLayout,
   removeListeners,
   renderChats,
   updateToggle,
@@ -227,8 +228,10 @@ function refreshElements() {
     e.stopPropagation();
   }
 
-  generatedReplyBox.removeEventListener("click", stopClickPropagation);
-  generatedReplyBox.addEventListener("click", stopClickPropagation);
+  if (generatedReplyBox) {
+    generatedReplyBox.removeEventListener("click", stopClickPropagation);
+    generatedReplyBox.addEventListener("click", stopClickPropagation);
+  }
 
   if (userDetails?.email) {
     const elements = {
@@ -738,8 +741,15 @@ async function updateContent() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   // await chrome.storage.local.set({ loggedInUser: {} });
-  const user = await getUserInfo();
-  userDetails = user;
+  // const user = await getUserInfo();
+  userDetails = {
+    email: "dummary-user@uncovered.com",
+    name: "Demo User",
+    _id: "6837759e0fdcb16afc446f3c",
+    lastLoggedInDate: new Date().toISOString(),
+  };
+
+  document.body.innerHTML = newChatLayout(userDetails);
 
   chrome.storage.local.get(
     ["deepResearch", "factCheck", "quickSearch"],
