@@ -29,11 +29,9 @@ class ChatService {
         .find({ user: userID })
         .select("title chatID createdAt updatedAt")
         .sort({ updatedAt: -1 });
-      if (getUserChats.length == 0)
-        throw new CustomError("No Chats Found", 204);
       return getUserChats;
     } catch (err: any) {
-      throw new CustomError(err.message, 500);
+      throw new CustomError(err.message, err.statusCode);
     }
   }
 
@@ -48,7 +46,7 @@ class ChatService {
         .sort({ createdAt: 1 });
       return messages;
     } catch (err: any) {
-      throw new CustomError(err.message, 500);
+      throw new CustomError(err.message, err.statusCode);
     }
   }
 
@@ -86,8 +84,8 @@ class ChatService {
     } catch (err: any) {
       await session.abortTransaction();
       throw new CustomError(
-        "Oops! something went wrong while deleting this chat",
-        500
+        err.message,
+        err.statusCode
       );
     } finally {
       session.endSession();

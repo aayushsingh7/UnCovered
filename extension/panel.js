@@ -36,6 +36,8 @@ import {
 } from "./utils/helpers/fileHelpers.js";
 import {
   fetchSourceDetails,
+  getFinalPrompt,
+  getUserContext,
   replaceWithClickableLink,
   showToast,
 } from "./utils/utils.js";
@@ -216,7 +218,9 @@ function refreshElements() {
   generatedReplyBox = document.getElementById("generated-box");
 
   UPLOADED_DOCUMENTS.length = 0;
-  imageContainer.innerHTML = "";
+  if (imageContainer) {
+    imageContainer.innerHTML = "";
+  }
 
   function stopClickPropagation(e) {
     if (e.target.closest("button")) return;
@@ -388,7 +392,7 @@ async function addNewMessage(customPrompt) {
   responseStreamingStatus = true;
   let populatingSourcesLoading = false;
   sendBtn.innerHTML = `<img alt="pause" src="./assets/pause.svg" />`;
-  const populatedSources = [];
+  let populatedSources = [];
   const LINKS = extractLinks(
     customPrompt + " " + newMessageDetails.selectedText
   );
@@ -428,20 +432,15 @@ async function addNewMessage(customPrompt) {
       behavior: "smooth",
     });
 
-    let userContext;
-
-    if (newMessageDetails.selectedText) {
-      userContext = newMessageDetails.selectedText;
-    } else if (UPLOADED_DOCUMENTS.length > 0 && LINKS.length > 0) {
-      userContext =
-        "Analyze all the given images & links to fulfill user query";
-    } else if (UPLOADED_DOCUMENTS.length > 0) {
-      userContext = "Analyze all the given images to fulfill user query";
-    } else if (LINKS.length > 0) {
-      userContext = "Analyze all the given links to fulfill user query";
-    } else {
-      userContext = "No Additional Context Provided";
-    }
+    let userContext = getUserContext(
+      newMessageDetails,
+      UPLOADED_DOCUMENTS,
+      LINKS
+    );
+    let finalPrompt = getFinalPrompt(
+      customPrompt,
+      newMessageDetails.actionType
+    );
 
     const USER_MESSAGE = {
       role: "user",
@@ -449,7 +448,7 @@ async function addNewMessage(customPrompt) {
         {
           type: "text",
           text: `Query Type: ${newMessageDetails.actionType}
-User Prompt: ${customPrompt}
+User Prompt: ${finalPrompt}
 User Context: ${userContext}`,
         },
         ...LINKS.map((link) => ({
@@ -522,7 +521,7 @@ User Context: ${userContext}`,
             resultsContainerObj.panel2.appendChild(loadingDiv);
 
             const fetchPromises = data.citations.map(async (source, index) => {
-              await new Promise((resolve) => setTimeout(resolve, index * 1000));
+              await new Promise((resolve) => setTimeout(resolve, index * 500));
               const populatedSource = await fetchSourceDetails(source);
               resultsContainerObj.panel2.appendChild(
                 createSourceBox(populatedSource)
@@ -545,10 +544,6 @@ User Context: ${userContext}`,
         }
       },
       async (completeData) => {
-        while (populatingSourcesLoading) {
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
-
         if (!completeData.content) {
           CHAT_HISTORY.pop();
           handleContentBoxDisplay(
@@ -567,6 +562,13 @@ User Context: ${userContext}`,
           return;
         }
 
+        populatedSources =
+          populatedSources.length > 0
+            ? populatedSources
+            : populatedSources.map((source) =>
+                fetchSourceDetails(source, "no-fetch")
+              );
+
         try {
           newMessageBox.classList.remove("new-message");
           const { newChat, newMessage } = await addNewMessageToDB(
@@ -584,6 +586,13 @@ User Context: ${userContext}`,
           );
 
           if (newChat != null) {
+            const noChatsFound = document.querySelector(".no-chats-found");
+            if (
+              noChatsFound &&
+              window.getComputedStyle(noChatsFound).display === "flex"
+            ) {
+              chatsContainer.innerHTML = "";
+            }
             selectedChat = newChat;
             chatsContainer.prepend(createChatBox(newChat));
             highlightSelectedChat(newChat.chatID, chatsContainer);
@@ -599,7 +608,7 @@ User Context: ${userContext}`,
               newMessageDetails
             );
             messagesContainer.removeChild(newMessageBox);
-            showToast("Cannot save the message at this moment!","error");
+            showToast("Cannot save the message at this moment!", "error");
             return;
           }
 
@@ -639,10 +648,7 @@ User Context: ${userContext}`,
           };
           imageContainer.innerHTML = "";
         } catch (err) {
-          showToast(
-            "Cannot save message at this moment",
-            "error"
-          );
+          // showToast("Cannot save message at this moment", "error");
         }
       }
     );
@@ -729,7 +735,7 @@ async function updateContent() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // await chrome.storage.local.set({loggedInUser: {}});
+  // await chrome.storage.local.set({ loggedInUser: {} });
   const user = await getUserInfo();
   userDetails = user;
 

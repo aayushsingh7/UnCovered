@@ -16,7 +16,10 @@ export function getReadableDomain(url) {
   }
 }
 
-export async function fetchSourceDetails(url) {
+export async function fetchSourceDetails(url,type) {
+  if(type == "no-fetch") {
+    throw new Error("Only Static Data Requested")
+  }
   const DEFAULT_IMAGE =
     "https://static.vecteezy.com/system/resources/thumbnails/004/141/669/small/no-photo-or-blank-image-icon-loading-images-or-missing-image-mark-image-not-available-or-image-coming-soon-sign-simple-nature-silhouette-in-frame-isolated-illustration-vector.jpg";
   try {
@@ -94,4 +97,33 @@ export function showToast(message, type = "info") {
   setTimeout(() => {
     toast.remove();
   }, 5000);
+}
+
+export function getUserContext(newMessageDetails, uploadedDocuments, links) {
+  if (newMessageDetails.selectedText) {
+    return newMessageDetails.selectedText;
+  } else if (uploadedDocuments.length > 0 && links.length > 0) {
+    return "Analyze all the given images & links to fulfill user query";
+  } else if (uploadedDocuments.length > 0) {
+    return "Analyze all the given images to fulfill user query";
+  } else if (links.length > 0) {
+    return "Analyze all the given links to fulfill user query";
+  } else {
+    return "No Additional Context Provided";
+  }
+}
+
+export function getFinalPrompt(customPrompt, actionType) {
+  if (customPrompt) return customPrompt;
+
+  switch (actionType) {
+    case "fact-check":
+      return "Fact check the given data";
+    case "quick-search":
+      return "Quick search the given data";
+    case "deep-research":
+      return "Provide a comprehensive result based on the data provided";
+    default:
+      return "No User Prompt Provided";
+  }
 }

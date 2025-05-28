@@ -292,6 +292,7 @@ export function createSourceBox(fetchLinkDetails) {
 
   const headline = document.createElement("a");
   headline.textContent = fetchLinkDetails.title;
+  headline.href = fetchLinkDetails.url;
   headline.target = "_blank";
 
   const description = document.createElement("p");

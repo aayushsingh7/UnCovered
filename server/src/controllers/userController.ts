@@ -12,7 +12,7 @@ class UserController {
         await this.userService.verifyOrCreateUser(req.body);
       res.status(statusCode).send({ success, message, data: user });
     } catch (err: any) {
-      res.status(err.statusCode).send({ success: false, message: err.message });
+      res.status(err.statusCode || 500).send({ success: false, message: err.message });
     }
   }
   public async getUserData(req: Request, res: Response) {
@@ -24,7 +24,7 @@ class UserController {
         data: user,
       });
     } catch (err: any) {
-      res.status(err.statusCode).send({ success: false, message: err.message });
+      res.status(err.statusCode || 500).send({ success: false, message: err.message });
     }
   }
 }

@@ -17,7 +17,9 @@ class ChatController {
         data: chats,
       });
     } catch (err: any) {
-      res.status(err.statusCode).send({ success: false, message: err.message });
+      res
+        .status(err.statusCode || 500)
+        .send({ success: false, message: err.message, data: [] });
     }
   }
   public async fetchMessages(req: Request, res: Response) {
@@ -32,7 +34,9 @@ class ChatController {
         data: messages,
       });
     } catch (err: any) {
-      res.status(err.statusCode).send({ success: false, message: err.message });
+      res
+        .status(err.statusCode || 500)
+        .send({ success: false, message: err.message });
     }
   }
   public async searchChatsAndMessages(req: Request, res: Response) {
@@ -47,7 +51,9 @@ class ChatController {
         data: searchResults,
       });
     } catch (err: any) {
-      res.status(err.statusCode).send({ success: false, message: err.message });
+      res
+        .status(err.statusCode || 500)
+        .send({ success: false, message: err.message });
     }
   }
   public async deleteChat(req: Request, res: Response) {
@@ -57,7 +63,9 @@ class ChatController {
         .status(200)
         .send({ success: true, message: "Chat Deleted Successfully" });
     } catch (err: any) {
-      res.status(err.statusCode).send({ success: false, message: err.message });
+      res
+        .status(err.statusCode || 500)
+        .send({ success: false, message: err.message });
     }
   }
   public async addNewMessage(req: Request, res: Response) {
@@ -76,7 +84,9 @@ class ChatController {
         newChat: response.newChat,
       });
     } catch (err: any) {
-      res.status(err.statusCode).send({ success: false, message: err.message });
+      res
+        .status(err.statusCode || 500)
+        .send({ success: false, message: err.message });
     }
   }
 }

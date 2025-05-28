@@ -39,7 +39,7 @@ class UserSerivce {
         throw new CustomError("No User Exists with the given Email", 404);
       return user;
     } catch (err: any) {
-      throw new CustomError(err.message, 500);
+      throw new CustomError(err.message,err.statusCode); 
     }
   }
 }

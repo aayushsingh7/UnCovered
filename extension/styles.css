@@ -290,6 +290,7 @@ h1 {
   overflow: hidden;
   display: none;
   transition: 0.1s ease-in-out;
+  border: 2px solid #444;
 }
 
 .show-content-box {
@@ -366,7 +367,7 @@ h1 {
   color: #e3e3e3;
 }
 
-.source-box img{
+.source-box img {
   background: #fff;
 }
 
@@ -401,6 +402,10 @@ h1 {
   -webkit-box-orient: vertical;
   overflow: hidden;
   word-break: break-all;
+}
+
+.source-info a {
+  color: #f1f1f1 !important;
 }
 
 .source-info p {
