@@ -521,7 +521,7 @@ User Context: ${userContext}`,
             resultsContainerObj.panel2.appendChild(loadingDiv);
 
             const fetchPromises = data.citations.map(async (source, index) => {
-              await new Promise((resolve) => setTimeout(resolve, index * 500));
+              await new Promise((resolve) => setTimeout(resolve, index * 1000));
               const populatedSource = await fetchSourceDetails(source);
               resultsContainerObj.panel2.appendChild(
                 createSourceBox(populatedSource)
@@ -562,12 +562,13 @@ User Context: ${userContext}`,
           return;
         }
 
-        populatedSources =
-          populatedSources.length > 0
-            ? populatedSources
-            : populatedSources.map((source) =>
-                fetchSourceDetails(source, "no-fetch")
-              );
+        if (populatedSources.length === 0) {
+          populatedSources = await Promise.all(
+            completeData?.citations?.map((source) =>
+              fetchSourceDetails(source, "no-fetch")
+            )
+          );
+        }
 
         try {
           newMessageBox.classList.remove("new-message");
