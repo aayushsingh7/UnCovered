@@ -82,7 +82,7 @@ class AIService {
           ],
           stream: true,
           temperature: 0.7,
-          max_tokens: 4000,
+          max_tokens: 5000,
         }),
       });
 
@@ -105,6 +105,7 @@ class AIService {
       try {
         while (true) {
           const { value, done } = await reader.read();
+          if(done) break;
           // Decode the chunk and add to buffer
           const text = decoder.decode(value, { stream: true });
           buffer += text;

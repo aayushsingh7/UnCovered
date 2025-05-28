@@ -48,8 +48,8 @@ export function handleSettingsContainerClick(settingsContainer) {
 }
 
 export function updateToggle(element, status) {
-  element.innerText = status ? "ON" : "OFF";
-  element.classList.toggle("on", status);
+  element.innerText = Boolean(status) ? "ON" : "OFF";
+  element.classList.toggle("on", Boolean(status));
 }
 
 export function handleContentBoxDisplay(
@@ -377,8 +377,8 @@ export function createContentBox(
   const panel1 = document.createElement("div");
   panel1.className = "tab-panel";
   panel1.dataset.tab = "answer";
-  panel1.textContent = newMessageDetails.actionType.startsWith("Deep")
-    ? "Deep research may take 3 to 5 minutes..."
+  panel1.textContent = newMessageDetails.actionType.startsWith("deep")
+    ? "Deep research can take 2–4 minutes. Hang tight!"
     : "Generating response...";
   panel1.style.display = "block";
 
@@ -734,7 +734,7 @@ export async function handleChatBoxClick(
   highlightSelectedChat(chatID, chatsContainer);
   const messages = await fetchMessages(chatID);
 
-  messages.forEach((message) => {
+  messages?.forEach((message) => {
     const USER_MESSAGE = {
       role: "user",
       content: [

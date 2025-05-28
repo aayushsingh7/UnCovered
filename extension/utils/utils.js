@@ -56,6 +56,10 @@ export async function fetchSourceDetails(url) {
 }
 
 export function replaceWithClickableLink(body, sources) {
+  body = body
+    .replace(/<think>/g, '<div class="ai-thinking" id="ai-thinking">')
+    .replace(/<\/think>/g, '</div>');
+
   return body.replace(/\[(\d+)\]/g, (match, num) => {
     const index = parseInt(num, 10);
     const source = sources[index - 1]?.url

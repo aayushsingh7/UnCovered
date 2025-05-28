@@ -30,7 +30,7 @@ class ChatService {
         .select("title chatID createdAt updatedAt")
         .sort({ updatedAt: -1 });
       if (getUserChats.length == 0)
-        throw new CustomError("No Chats Found", 404);
+        throw new CustomError("No Chats Found", 204);
       return getUserChats;
     } catch (err: any) {
       throw new CustomError(err.message, 500);

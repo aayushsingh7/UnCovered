@@ -113,13 +113,15 @@ export async function fetchAIResponse(
     const decoder = new TextDecoder();
 
     try {
-      while (!isComplete) {
+      while (true) {
         const { value, done } = await reader.read();
+
         if (done) {
           isComplete = true;
           break;
         }
 
+        // Process the chunk
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
@@ -146,7 +148,7 @@ export async function fetchAIResponse(
 
               const content = data?.choices?.[0]?.delta?.content;
               if (content) {
-                if (accumulatedContent == content) continue;
+                if (accumulatedContent === content) continue;
                 accumulatedContent += content;
                 const extracted = extractAndCleanContent(
                   accumulatedContent,
@@ -169,6 +171,7 @@ export async function fetchAIResponse(
 
                 if (stopResponseStreaming) {
                   abortController.abort();
+                  isComplete = true;
                   break;
                 }
               }
@@ -177,6 +180,9 @@ export async function fetchAIResponse(
             }
           }
         }
+
+        // Break if we got [DONE] signal
+        if (isComplete) break;
       }
 
       const finalExtracted = extractAndCleanContent(
@@ -201,36 +207,41 @@ export async function fetchAIResponse(
         },
       };
     } finally {
-      reader.releaseLock();
+      try {
+        reader.releaseLock();
+      } catch (e) {
+        // ignore if already released
+      }
     }
   } catch (err) {
-    if (err.name == "AbortError") {
+    if (err.name === "AbortError") {
       const finalExtracted = extractAndCleanContent(
         accumulatedContent,
         verdict
       );
 
-      onComplete({
-        content: accumulatedContent,
-        cleanContent: finalExtracted.cleanContent,
-        citations: citations,
-        verdict: verdict,
-      });
+      if (onComplete) {
+        onComplete({
+          content: accumulatedContent,
+          cleanContent: finalExtracted.cleanContent,
+          citations: citations,
+          verdict: verdict,
+        });
+      }
     } else {
       showToast(
         "(For Organizers) Make sure the server is up and running.",
         "warning"
       );
-      if (abortController) {
-        abortController.abort();
-      }
 
-      onComplete({
-        content: null,
-        cleanContent: null,
-        citations: null,
-        verdict: null,
-      });
+      if (onComplete) {
+        onComplete({
+          content: null,
+          cleanContent: null,
+          citations: null,
+          verdict: null,
+        });
+      }
 
       return {
         newMessage: {
@@ -269,7 +280,7 @@ export async function addNewMessageToDB(
         newMsg: {
           verdict: verdict,
           responseModel: actionType.startsWith("deep")
-            ? "sonar-reasoning-pro"
+            ? "sonar-deep-research"
             : "sonar-pro",
           prompt,
           selectedText,
@@ -355,7 +366,7 @@ export async function generateReply(messageID) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messageID }),
     });
-    let data= await response.json();
+    let data = await response.json();
     return data.data;
   } catch (err) {
     showToast("Oops! something went wrong while generating reply");

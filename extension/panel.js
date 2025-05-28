@@ -226,7 +226,7 @@ function refreshElements() {
   generatedReplyBox.removeEventListener("click", stopClickPropagation);
   generatedReplyBox.addEventListener("click", stopClickPropagation);
 
-  if (userDetails.email) {
+  if (userDetails?.email) {
     const elements = {
       uploadFileBtn,
       uploadFileInput,
@@ -473,6 +473,12 @@ User Context: ${userContext}`,
       newMessageDetails.actionType,
       CHAT_HISTORY,
       async (data) => {
+        const loadingDiv = document.createElement("div");
+        loadingDiv.classList = "loading-sources";
+        const loadingIndicator = document.createElement("div");
+        loadingIndicator.classList = "loader-1";
+        loadingDiv.appendChild(loadingIndicator);
+
         try {
           loadingAiResponse = false;
           let replaceWithLink = replaceWithClickableLink(
@@ -513,7 +519,7 @@ User Context: ${userContext}`,
 
             populatingSourcesLoading = true;
             resultsContainerObj.tab2.style.display = "block";
-            resultsContainerObj.panel2.innerHTML += `<div class="loading-sources"><div class="loader-1"></div></div>`;
+            resultsContainerObj.panel2.appendChild(loadingDiv);
 
             const fetchPromises = data.citations.map(async (source, index) => {
               await new Promise((resolve) => setTimeout(resolve, index * 1000));
@@ -526,26 +532,15 @@ User Context: ${userContext}`,
             });
 
             await Promise.allSettled(fetchPromises);
-
-            const loadingElem =
-              resultsContainerObj.panel2.querySelector(".loading-sources");
-            if (loadingElem) {
-              resultsContainerObj.panel2.removeChild(loadingElem);
-            }
-
+            loadingDiv.remove();
             populatingSourcesLoading = false;
           }
         } catch (err) {
           populatingSourcesLoading = false;
-          const loadingElem =
-            resultsContainerObj.panel2?.querySelector(".loading-sources");
-          if (loadingElem) {
-            resultsContainerObj.panel2.removeChild(loadingElem);
-          }
-
+          loadingDiv.remove();
           showToast(
             "Oops! something went wrong while generating answer",
-            "error"
+            "info"
           );
         }
       },
@@ -604,7 +599,7 @@ User Context: ${userContext}`,
               newMessageDetails
             );
             messagesContainer.removeChild(newMessageBox);
-            showToast("Cannot save the message at this moment! (!newMessage)");
+            showToast("Cannot save the message at this moment!","error");
             return;
           }
 
@@ -644,7 +639,10 @@ User Context: ${userContext}`,
           };
           imageContainer.innerHTML = "";
         } catch (err) {
-          showToast("Cannot save message at this moment", "error");
+          showToast(
+            "Cannot save message at this moment",
+            "error"
+          );
         }
       }
     );
@@ -739,16 +737,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     ["deepResearch", "factCheck", "quickSearch"],
     (result) => {
       if (
-        result.deepResearch == null ||
-        result.quickSearch == null ||
-        result.factCheck == null
+        result?.deepResearch == null ||
+        result?.quickSearch == null ||
+        result?.factCheck == null
       ) {
         chrome.storage.local.set(
-          { deepResearch: false, quickSearch: true, factCheck: true },
-          (newRes) => {
-            deepResearchStatus = newRes.deepResearch;
-            quickSearchStatus = newRes.quickSearch;
-            factCheckStatus = newRes.factCheck;
+          { deepResearch: false, quickSearch: false, factCheck: false },
+          () => {
+            deepResearchStatus = false;
+            quickSearchStatus = false;
+            factCheckStatus = false;
           }
         );
       } else {

@@ -51,6 +51,12 @@ code.hljs {
 .hljs-string {
   color: #a5d6ff;
 }
+
+.ai-thinking{
+  color: #878787;
+  font-style:italic;
+}
+
 .hljs-built_in,
 .hljs-symbol {
   color: #ffa657;

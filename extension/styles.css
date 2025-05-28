@@ -353,7 +353,6 @@ h1 {
   line-height: 1.5;
   color: #e0e0e0;
   margin-bottom: 10px;
-  /* display: none; */
   font-weight: 600;
 }
 
@@ -365,6 +364,10 @@ h1 {
   padding: 15px 0px;
   border-bottom: 2px solid #444;
   color: #e3e3e3;
+}
+
+.source-box img{
+  background: #fff;
 }
 
 .source-box:last-child {
